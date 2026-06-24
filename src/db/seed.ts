@@ -4,6 +4,7 @@ config({ path: ".env.local" });
 import { inArray } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { runSync } from "@/lib/ad-sync";
 
 /**
  * Idempotent seed. Safe to run repeatedly.
@@ -311,10 +312,18 @@ async function main() {
   }
   await db.insert(schema.fxRates).values(fxRows);
 
+  // 5) Backfill ad campaigns/metrics by running the REAL sync pipeline through
+  //    the MockAdProvider (ignoring the cooldown for seeding).
+  for (const c of CLIENTS) {
+    const summary = await runSync(c.id, { ignoreCooldown: true });
+    console.info(
+      `  synced ${c.name}: ${summary.campaigns} campaigns, ${summary.metricRows} metric rows`,
+    );
+  }
+
   console.info(
-    `Seed complete: ${CLIENTS.length} clients, ${USERS.length} users, ~60 days of calls/setter activity, leads + follow-ups, ad connections, fx rates.`,
+    `Seed complete: ${CLIENTS.length} clients, ${USERS.length} users, ~60 days of calls/setter activity, leads + follow-ups, ad connections + metrics, fx rates.`,
   );
-  console.info("Ad campaigns/metrics: run syncAdData (Step 5) to populate from fixtures.");
   process.exit(0);
 }
 
