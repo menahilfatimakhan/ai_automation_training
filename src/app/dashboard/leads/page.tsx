@@ -1,0 +1,96 @@
+import { redirect } from "next/navigation";
+import { getSessionContext } from "@/lib/auth";
+import { resolveClientScope } from "@/lib/data/client-scope";
+import { loadClientMembers, loadFollowUps, loadLeads } from "@/lib/data/leads";
+import { ClientSwitcher } from "@/components/ClientSwitcher";
+import { LeadRow } from "@/components/LeadRow";
+import { FollowUpItem } from "@/components/FollowUpItem";
+
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ client?: string }>;
+}) {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/login");
+
+  const { client } = await searchParams;
+  const { active, options } = await resolveClientScope(ctx, client);
+  if (!active) return <p className="text-neutral-400">No client available.</p>;
+
+  const [leads, members] = await Promise.all([
+    loadLeads(active.id),
+    loadClientMembers(active.id),
+  ]);
+  // Admin sees the whole queue; everyone else sees their own follow-ups.
+  const followUps = await loadFollowUps(
+    active.id,
+    ctx.isAdmin ? undefined : ctx.userId,
+  );
+
+  const memberName = (id: string | null) =>
+    members.find((m) => m.userId === id)?.name ?? "Unassigned";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Leads & follow-ups</h1>
+          <p className="text-sm text-neutral-400">{active.name}</p>
+        </div>
+        <ClientSwitcher options={options} activeId={active.id} />
+      </div>
+
+      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        <h2 className="mb-2 text-sm font-medium text-neutral-300">
+          {ctx.isAdmin ? "Follow-up queue (all)" : "My follow-up queue"}
+        </h2>
+        {followUps.length === 0 ? (
+          <p className="text-sm text-neutral-500">No follow-ups.</p>
+        ) : (
+          <ul>
+            {followUps.map((f) => (
+              <FollowUpItem
+                key={f.id}
+                id={f.id}
+                leadName={f.leadName}
+                dueDate={f.dueDate}
+                status={f.status}
+                notes={f.notes}
+                ownerLabel={ctx.isAdmin ? memberName(f.ownerUserId) : undefined}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        <h2 className="mb-3 text-sm font-medium text-neutral-300">Leads</h2>
+        <table className="w-full text-left text-sm">
+          <thead className="text-xs uppercase text-neutral-500">
+            <tr>
+              <th className="py-1">Name</th>
+              <th className="py-1">Contact</th>
+              <th className="py-1">Source</th>
+              <th className="py-1">Status</th>
+              <th className="py-1">Tags</th>
+              <th className="py-1">Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leads.map((l) => (
+              <LeadRow key={l.id} lead={l} members={members} isAdmin={ctx.isAdmin} />
+            ))}
+            {leads.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-6 text-center text-neutral-500">
+                  No leads yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+    </div>
+  );
+}

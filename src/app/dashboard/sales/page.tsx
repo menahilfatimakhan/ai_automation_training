@@ -6,6 +6,7 @@ import { monthStartIso, todayIso, formatMoney } from "@/lib/format";
 import { LogCallForm } from "@/components/LogCallForm";
 import { OutcomePie } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
+import { TagEditor } from "@/components/TagEditor";
 
 const OUTCOME_LABEL: Record<string, string> = {
   closed: "Closed",
@@ -106,7 +107,9 @@ export default async function SalesDashboardPage({
                   <td className="py-1.5">{formatMoney(c.revenue, c.currency)}</td>
                   <td className="py-1.5">{formatMoney(c.cashCollected, c.currency)}</td>
                   <td className="py-1.5 text-neutral-400">{c.leadSource ?? "—"}</td>
-                  <td className="py-1.5 text-neutral-400">{c.tags.join(", ") || "—"}</td>
+                  <td className="py-1.5">
+                    <TagEditor id={c.id} tags={c.tags} />
+                  </td>
                 </tr>
               ))}
             </tbody>

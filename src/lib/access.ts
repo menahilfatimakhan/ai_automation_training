@@ -72,6 +72,7 @@ export function navFor(ctx: SessionContext): {
   setter: boolean;
   ads: boolean;
   callLogs: boolean;
+  leads: boolean;
   admin: boolean;
 } {
   const roles = new Set(ctx.memberships.map((m) => m.role));
@@ -82,6 +83,7 @@ export function navFor(ctx: SessionContext): {
     setter: ctx.isAdmin || roles.has("setter"),
     ads: ctx.isAdmin || anyMember,
     callLogs: ctx.isAdmin || roles.has("closer") || roles.has("client"),
+    leads: ctx.isAdmin || roles.has("closer") || roles.has("setter"),
     admin: ctx.isAdmin,
   };
 }

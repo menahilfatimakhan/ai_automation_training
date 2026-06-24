@@ -19,6 +19,7 @@ export default async function DashboardLayout({
     { href: "/dashboard/setter", label: "Setter", show: nav.setter },
     { href: "/dashboard/ads", label: "Ads", show: nav.ads },
     { href: "/dashboard/call-logs", label: "Call Logs", show: nav.callLogs },
+    { href: "/dashboard/leads", label: "Leads", show: nav.leads },
     { href: "/dashboard/admin", label: "Admin", show: nav.admin },
   ];
 
