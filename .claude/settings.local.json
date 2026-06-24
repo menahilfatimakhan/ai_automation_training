@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node -v)",
+      "PowerShell(npm -v)",
+      "PowerShell(\"---NODE---\")",
+      "PowerShell(\"---NPM---\")",
+      "PowerShell(\"---GIT---\")"
+    ]
+  }
+}
