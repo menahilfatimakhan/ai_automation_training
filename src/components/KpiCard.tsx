@@ -1,5 +1,6 @@
 import { formatMetric as fm } from "@/components/format-value";
 import { OverrideControl } from "@/components/OverrideControl";
+import { acceptSuggestion, dismissSuggestion } from "@/app/dashboard/ai-actions";
 import type { KpiCardVM } from "@/lib/data/master";
 
 /**
@@ -68,6 +69,18 @@ export function KpiCard({
             <span className="ml-1 text-sky-300">
               (suggests {fm(card.suggestion.value, card.format, currency)})
             </span>
+          )}
+          {!readOnly && card.suggestion.value !== null && (
+            <div className="mt-1.5 flex gap-3">
+              <form action={acceptSuggestion}>
+                <input type="hidden" name="id" value={card.suggestion.id} />
+                <button className="text-brand hover:underline">Accept → override</button>
+              </form>
+              <form action={dismissSuggestion}>
+                <input type="hidden" name="id" value={card.suggestion.id} />
+                <button className="text-neutral-400 hover:text-white">Dismiss</button>
+              </form>
+            </div>
           )}
         </div>
       )}

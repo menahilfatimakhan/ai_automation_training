@@ -57,8 +57,9 @@ describe("provider registry", () => {
     const { getProviders } = await loadRegistryWith("mock");
     const p = getProviders();
     expect(p.fx.name).toBe("mock");
-    expect(p.notifier.name).toBe("console");
+    expect(p.notifier.name).toBe("console"); // BASE_ENV sets NOTIFIER=console
     expect(p.secrets.name).toBe("env");
+    expect(p.ai.name).toBe("mock"); // no/placeholder key → mock AI
   });
 
   it("lets a test inject a fake without env (swap = injection only)", async () => {

@@ -421,6 +421,24 @@ export const aiSuggestions = pgTable("ai_suggestions", {
     .defaultNow(),
 });
 
+// ─── Notifications (in-app delivery channel for the Notifier port) ───────────
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  /** Optional target user; null = visible to all client members. */
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  meta: jsonb("meta").notNull().default({}),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ─── FX ──────────────────────────────────────────────────────────────────────
 export const fxRates = pgTable(
   "fx_rates",

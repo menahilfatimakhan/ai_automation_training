@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSessionContext } from "@/lib/auth";
 import { todayIso } from "@/lib/format";
+import { generateLossDebrief } from "@/lib/ai/usecases";
 
 const OUTCOMES = ["closed", "rescheduled", "lost", "no_show"] as const;
 type Outcome = (typeof OUTCOMES)[number];
@@ -49,6 +50,26 @@ export async function logCall(formData: FormData) {
     tags,
   });
   if (error) throw new Error(error.message);
+
+  // A lost call triggers an advisory AI loss-debrief delivered to the in-app
+  // panel via the Notifier. Best-effort: never block call logging on AI.
+  if (outcome === "lost") {
+    try {
+      const { data: client } = await supabase
+        .from("clients")
+        .select("id, name, reporting_currency")
+        .eq("id", clientId)
+        .maybeSingle();
+      if (client) {
+        await generateLossDebrief(
+          { id: client.id, name: client.name, currency: client.reporting_currency },
+          { objection: objectionReason, notes, userId: ctx.userId },
+        );
+      }
+    } catch (err) {
+      console.error("loss debrief failed:", err);
+    }
+  }
 
   revalidatePath("/dashboard/sales");
   revalidatePath("/dashboard/master");

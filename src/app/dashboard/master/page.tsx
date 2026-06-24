@@ -3,9 +3,11 @@ import { getSessionContext } from "@/lib/auth";
 import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { computeMasterView } from "@/lib/data/master";
+import { loadNotifications } from "@/lib/data/notifications";
 import { KpiCard } from "@/components/KpiCard";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { RevenueTrendChart } from "@/components/charts";
+import { AiPanel } from "@/components/AiPanel";
 
 export default async function MasterDashboardPage({
   searchParams,
@@ -21,7 +23,10 @@ export default async function MasterDashboardPage({
     return <p className="text-neutral-400">No clients available for your account.</p>;
   }
 
-  const view = await computeMasterView(active.id, active.reportingCurrency);
+  const [view, notifications] = await Promise.all([
+    computeMasterView(active.id, active.reportingCurrency),
+    loadNotifications(active.id),
+  ]);
   const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
 
   return (
@@ -49,11 +54,18 @@ export default async function MasterDashboardPage({
         ))}
       </div>
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">
-          Revenue trend (closed deals, MTD)
-        </h2>
-        <RevenueTrendChart data={view.revenueTrend} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+          <h2 className="mb-3 text-sm font-medium text-neutral-300">
+            Revenue trend (closed deals, MTD)
+          </h2>
+          <RevenueTrendChart data={view.revenueTrend} />
+        </div>
+        <AiPanel
+          clientId={active.id}
+          notifications={notifications}
+          readOnly={readOnly}
+        />
       </div>
     </div>
   );

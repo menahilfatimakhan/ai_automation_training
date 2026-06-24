@@ -22,7 +22,8 @@ const serverSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1),
   AD_PROVIDER: z.enum(["mock", "meta"]).default("mock"),
   FX_PROVIDER: z.enum(["mock"]).default("mock"),
-  NOTIFIER: z.enum(["console"]).default("console"),
+  NOTIFIER: z.enum(["console", "db"]).default("db"),
+  AI_PROVIDER: z.enum(["mock", "anthropic"]).default("mock"),
 });
 
 export const clientEnv = clientSchema.parse({
@@ -44,6 +45,7 @@ export function serverEnv() {
     AD_PROVIDER: process.env.AD_PROVIDER,
     FX_PROVIDER: process.env.FX_PROVIDER,
     NOTIFIER: process.env.NOTIFIER,
+    AI_PROVIDER: process.env.AI_PROVIDER,
   });
   return _serverEnv;
 }
