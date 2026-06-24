@@ -108,7 +108,8 @@ sequence. Seed is idempotent.
 ## Env (see `.env.example`)
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
 `SUPABASE_SERVICE_ROLE_KEY` (server only), `DATABASE_URL`, `ANTHROPIC_API_KEY`,
-`AD_PROVIDER=mock|meta`, `FX_PROVIDER=mock`, `NOTIFIER=console`.
+`AD_PROVIDER=mock|meta`, `FX_PROVIDER=mock`, `NOTIFIER=db|console`,
+`AI_PROVIDER=mock|anthropic`.
 
 ## Deferred (leave seams/TODOs, don't build)
 Real Meta/Slack/email calls, cron/scheduling, anomaly detection, scheduled PDF
