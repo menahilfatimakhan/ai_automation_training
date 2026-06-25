@@ -8,6 +8,7 @@ import {
   removeMembership,
   setMonthlyGoal,
 } from "@/app/dashboard/admin/actions";
+import { ActionForm } from "@/components/ActionForm";
 
 const inputCls =
   "rounded border border-line bg-surface-sunken px-2 py-1 text-sm outline-none focus:border-brand";
@@ -42,9 +43,10 @@ export default async function AdminPage() {
           {clients.map((c) => {
             const g = goalFor(c.id);
             return (
-              <form
+              <ActionForm
                 key={c.id}
                 action={setMonthlyGoal}
+                success={`Goal saved for ${c.name}`}
                 className="flex flex-wrap items-end gap-3"
               >
                 <input type="hidden" name="clientId" value={c.id} />
@@ -71,7 +73,7 @@ export default async function AdminPage() {
                   />
                 </label>
                 <button className={btnCls}>Save</button>
-              </form>
+              </ActionForm>
             );
           })}
         </div>

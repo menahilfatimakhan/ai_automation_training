@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { logCall } from "@/app/dashboard/sales/actions";
+import { ActionForm } from "@/components/ActionForm";
 import { todayIso } from "@/lib/format";
 
 const inputCls =
@@ -17,7 +18,7 @@ export function LogCallForm({
   const [outcome, setOutcome] = useState("closed");
 
   return (
-    <form action={logCall} className="grid grid-cols-2 gap-3">
+    <ActionForm action={logCall} success="Call logged" className="grid grid-cols-2 gap-3">
       <input type="hidden" name="clientId" value={clientId} />
       <input type="hidden" name="currency" value={currency} />
 
@@ -76,6 +77,6 @@ export function LogCallForm({
       <button className="col-span-2 rounded bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">
         Log call
       </button>
-    </form>
+    </ActionForm>
   );
 }

@@ -4,10 +4,12 @@ import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { loadCalls } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
-import { monthStartIso, todayIso, formatMoney } from "@/lib/format";
+import { todayIso, formatMoney } from "@/lib/format";
+import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { LogCallForm } from "@/components/LogCallForm";
 import { OutcomePie, Funnel, HBarChart } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
+import { RangeSelector } from "@/components/RangeSelector";
 import { TagEditor } from "@/components/TagEditor";
 import { AiPanel } from "@/components/AiPanel";
 
@@ -21,17 +23,19 @@ const OUTCOME_LABEL: Record<string, string> = {
 export default async function SalesDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; range?: string }>;
 }) {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
 
-  const { client } = await searchParams;
-  const { active, options } = await resolveClientScope(ctx, client);
+  const sp = await searchParams;
+  const { active, options } = await resolveClientScope(ctx, sp.client);
   if (!active) return <p className="text-ink-soft">No client available.</p>;
 
+  const range: RangeKey = isRangeKey(sp.range) ? sp.range : "mtd";
+  const { from, to, label: rangeLabel } = resolveRange(range);
   const today = todayIso();
-  const mtdCalls = await loadCalls(active.id, monthStartIso(), today);
+  const mtdCalls = await loadCalls(active.id, from, to);
   const todaysCalls = mtdCalls.filter((c) => c.date === today);
   const notifications = await loadNotifications(active.id);
   const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
@@ -77,10 +81,13 @@ export default async function SalesDashboardPage({
         <div>
           <h1 className="text-xl font-semibold">Sales dashboard</h1>
           <p className="text-sm text-ink-soft">
-            {active.name} · {active.reportingCurrency}
+            {active.name} · {rangeLabel} · {active.reportingCurrency}
           </p>
         </div>
-        <ClientSwitcher options={options} activeId={active.id} />
+        <div className="flex items-center gap-3">
+          <RangeSelector active={range} />
+          <ClientSwitcher options={options} activeId={active.id} />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -97,7 +104,7 @@ export default async function SalesDashboardPage({
         <div className={gated ? "pointer-events-none select-none blur-sm" : ""}>
           <section className="card p-4">
             <h2 className="mb-3 text-sm font-medium text-ink-soft">
-              Outcomes (month to date)
+              Outcomes ({rangeLabel})
             </h2>
             <OutcomePie data={pieData} />
           </section>
@@ -107,7 +114,7 @@ export default async function SalesDashboardPage({
       <div className={`grid gap-6 lg:grid-cols-2 ${gated ? "pointer-events-none select-none blur-sm" : ""}`}>
         <section className="card p-4">
           <h2 className="mb-3 text-sm font-medium text-ink-soft">
-            Conversion funnel (MTD)
+            Conversion funnel ({rangeLabel})
           </h2>
           <Funnel steps={funnelSteps} />
         </section>

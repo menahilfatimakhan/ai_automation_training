@@ -1,6 +1,7 @@
 import { formatMetric as fm } from "@/components/format-value";
 import { OverrideControl } from "@/components/OverrideControl";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { ActionForm } from "@/components/ActionForm";
 import { acceptSuggestion, dismissSuggestion } from "@/app/dashboard/ai-actions";
 import type { KpiCardVM } from "@/lib/data/master";
 
@@ -74,16 +75,16 @@ export function KpiCard({
           )}
           {!readOnly && card.suggestion.value !== null && (
             <div className="mt-2 flex gap-3">
-              <form action={acceptSuggestion}>
+              <ActionForm action={acceptSuggestion} success="Override applied from AI">
                 <input type="hidden" name="id" value={card.suggestion.id} />
                 <button className="font-medium text-brand hover:underline">
                   Accept → override
                 </button>
-              </form>
-              <form action={dismissSuggestion}>
+              </ActionForm>
+              <ActionForm action={dismissSuggestion} success="Suggestion dismissed">
                 <input type="hidden" name="id" value={card.suggestion.id} />
                 <button className="text-ink-faint hover:text-ink">Dismiss</button>
-              </form>
+              </ActionForm>
             </div>
           )}
         </div>

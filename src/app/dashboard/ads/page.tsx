@@ -6,8 +6,9 @@ import { loadAdMetrics, loadCampaigns } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
 import { AiPanel } from "@/components/AiPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { daysAgoIso, todayIso } from "@/lib/format";
+import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
+import { RangeSelector } from "@/components/RangeSelector";
 import { SyncButton } from "@/components/SyncButton";
 import { SeriesBarChart, HBarChart } from "@/components/charts";
 import { AdCampaignTable, type CampaignAggregate } from "@/components/AdCampaignTable";
@@ -26,18 +27,21 @@ async function lastSyncedLabel(clientId: string): Promise<string> {
 export default async function AdsDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; range?: string }>;
 }) {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
 
-  const { client } = await searchParams;
-  const { active, options } = await resolveClientScope(ctx, client);
+  const sp = await searchParams;
+  const { active, options } = await resolveClientScope(ctx, sp.client);
   if (!active) return <p className="text-ink-soft">No client available.</p>;
+
+  const range: RangeKey = isRangeKey(sp.range) ? sp.range : "30d";
+  const { from, to, label: rangeLabel } = resolveRange(range);
 
   const [campaigns, metrics, syncedLabel, notifications] = await Promise.all([
     loadCampaigns(active.id),
-    loadAdMetrics(active.id, daysAgoIso(29), todayIso()),
+    loadAdMetrics(active.id, from, to),
     lastSyncedLabel(active.id),
     loadNotifications(active.id),
   ]);
@@ -107,11 +111,12 @@ export default async function AdsDashboardPage({
         <div>
           <h1 className="text-xl font-semibold">Ads dashboard</h1>
           <p className="text-sm text-ink-soft">
-            {active.name} · read-only · last 30 days
+            {active.name} · read-only · {rangeLabel}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <SyncButton clientId={active.id} lastSyncedLabel={syncedLabel} />
+          <RangeSelector active={range} />
           <ClientSwitcher options={options} activeId={active.id} />
         </div>
       </div>

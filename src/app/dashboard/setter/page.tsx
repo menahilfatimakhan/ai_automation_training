@@ -6,24 +6,28 @@ import { loadSetterActivity } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
 import { AiPanel } from "@/components/AiPanel";
 import { computeSetterKpis } from "@/lib/kpi/engine";
-import { daysAgoIso, todayIso, formatPercent, formatNumber } from "@/lib/format";
+import { formatPercent, formatNumber } from "@/lib/format";
+import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { LogDayForm } from "@/components/LogDayForm";
 import { SeriesBarChart, Funnel } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
+import { RangeSelector } from "@/components/RangeSelector";
 
 export default async function SetterDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; range?: string }>;
 }) {
   const ctx = await getSessionContext();
   if (!ctx) redirect("/login");
 
-  const { client } = await searchParams;
-  const { active, options } = await resolveClientScope(ctx, client);
+  const sp = await searchParams;
+  const { active, options } = await resolveClientScope(ctx, sp.client);
   if (!active) return <p className="text-ink-soft">No client available.</p>;
 
-  const rows = await loadSetterActivity(active.id, daysAgoIso(29), todayIso());
+  const range: RangeKey = isRangeKey(sp.range) ? sp.range : "30d";
+  const { from, to, label: rangeLabel } = resolveRange(range);
+  const rows = await loadSetterActivity(active.id, from, to);
   const kpis = computeSetterKpis(rows);
   const trend = rows.map((r) => ({ date: r.date, callsBooked: r.callsBooked }));
   const notifications = await loadNotifications(active.id);
@@ -46,9 +50,12 @@ export default async function SetterDashboardPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Setter dashboard</h1>
-          <p className="text-sm text-ink-soft">{active.name} · last 30 days</p>
+          <p className="text-sm text-ink-soft">{active.name} · {rangeLabel}</p>
         </div>
-        <ClientSwitcher options={options} activeId={active.id} />
+        <div className="flex items-center gap-3">
+          <RangeSelector active={range} />
+          <ClientSwitcher options={options} activeId={active.id} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
@@ -79,7 +86,7 @@ export default async function SetterDashboardPage({
 
       <section className="card p-4">
         <h2 className="mb-3 text-sm font-medium text-ink-soft">
-          Outreach conversion funnel (last 30 days)
+          Outreach conversion funnel ({rangeLabel})
         </h2>
         <Funnel
           steps={[

@@ -4,6 +4,7 @@ import { navFor } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { DashboardShell, type NavLink } from "@/components/DashboardShell";
 import { CoachWidget } from "@/components/CoachWidget";
+import { Toaster } from "@/components/Toast";
 
 export default async function DashboardLayout({
   children,
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
     <DashboardShell links={links} userLabel={`Signed in · ${role}`}>
       {children}
       {active && <CoachWidget clientId={active.id} clientName={active.name} />}
+      <Toaster />
     </DashboardShell>
   );
 }
