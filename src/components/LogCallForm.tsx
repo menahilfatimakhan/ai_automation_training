@@ -5,7 +5,7 @@ import { logCall } from "@/app/dashboard/sales/actions";
 import { todayIso } from "@/lib/format";
 
 const inputCls =
-  "mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm outline-none focus:border-brand";
+  "mt-1 w-full rounded border border-line bg-surface-sunken px-2 py-1.5 text-sm outline-none focus:border-brand";
 
 export function LogCallForm({
   clientId,
@@ -21,7 +21,7 @@ export function LogCallForm({
       <input type="hidden" name="clientId" value={clientId} />
       <input type="hidden" name="currency" value={currency} />
 
-      <label className="text-xs text-neutral-400">
+      <label className="text-xs text-ink-soft">
         Outcome
         <select
           name="outcome"
@@ -36,44 +36,44 @@ export function LogCallForm({
         </select>
       </label>
 
-      <label className="text-xs text-neutral-400">
+      <label className="text-xs text-ink-soft">
         Date
         <input type="date" name="date" defaultValue={todayIso()} className={inputCls} />
       </label>
 
-      <label className="text-xs text-neutral-400">
+      <label className="text-xs text-ink-soft">
         Revenue ({currency})
         <input type="number" step="any" name="revenue" defaultValue={0} className={inputCls} />
       </label>
 
-      <label className="text-xs text-neutral-400">
+      <label className="text-xs text-ink-soft">
         Cash collected ({currency})
         <input type="number" step="any" name="cashCollected" defaultValue={0} className={inputCls} />
       </label>
 
-      <label className="text-xs text-neutral-400">
+      <label className="text-xs text-ink-soft">
         Lead source
         <input name="leadSource" placeholder="paid_ads, referral…" className={inputCls} />
       </label>
 
       {outcome === "lost" && (
-        <label className="text-xs text-neutral-400">
+        <label className="text-xs text-ink-soft">
           Objection
           <input name="objectionReason" placeholder="price, timing…" className={inputCls} />
         </label>
       )}
 
-      <label className="col-span-2 text-xs text-neutral-400">
+      <label className="col-span-2 text-xs text-ink-soft">
         Tags (comma-separated)
         <input name="tags" placeholder="hot, enterprise" className={inputCls} />
       </label>
 
-      <label className="col-span-2 text-xs text-neutral-400">
+      <label className="col-span-2 text-xs text-ink-soft">
         Notes
         <textarea name="notes" rows={2} className={inputCls} />
       </label>
 
-      <button className="col-span-2 rounded bg-brand px-3 py-2 text-sm font-medium text-black hover:bg-brand-dark">
+      <button className="col-span-2 rounded bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">
         Log call
       </button>
     </form>

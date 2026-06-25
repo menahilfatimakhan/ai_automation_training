@@ -17,25 +17,25 @@ export function TagEditor({
 
   if (!editable) {
     return (
-      <span className="text-neutral-400">{tags.length ? tags.join(", ") : "—"}</span>
+      <span className="text-ink-soft">{tags.length ? tags.join(", ") : "—"}</span>
     );
   }
 
   if (!open) {
     return (
       <div className="flex flex-wrap items-center gap-1">
-        {tags.length === 0 && <span className="text-neutral-500">—</span>}
+        {tags.length === 0 && <span className="text-ink-faint">—</span>}
         {tags.map((t) => (
           <span
             key={t}
-            className="rounded bg-neutral-800 px-1.5 py-0.5 text-[11px] text-neutral-200"
+            className="rounded bg-surface-raised px-1.5 py-0.5 text-[11px] text-ink"
           >
             {t}
           </span>
         ))}
         <button
           onClick={() => setOpen(true)}
-          className="text-[11px] text-neutral-500 hover:text-white"
+          className="text-[11px] text-ink-faint hover:text-ink"
         >
           edit
         </button>
@@ -55,7 +55,7 @@ export function TagEditor({
         defaultValue={tags.join(", ")}
         autoFocus
         placeholder="hot, enterprise"
-        className="w-40 rounded border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[11px] outline-none focus:border-brand"
+        className="w-40 rounded border border-line bg-surface-sunken px-1.5 py-0.5 text-[11px] outline-none focus:border-brand"
       />
       <button className="text-[11px] text-brand hover:underline">save</button>
     </form>

@@ -1,12 +1,15 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
+import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { loadCalls } from "@/lib/data/dashboards";
+import { loadNotifications } from "@/lib/data/notifications";
 import { monthStartIso, todayIso, formatMoney } from "@/lib/format";
 import { LogCallForm } from "@/components/LogCallForm";
 import { OutcomePie } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { TagEditor } from "@/components/TagEditor";
+import { AiPanel } from "@/components/AiPanel";
 
 const OUTCOME_LABEL: Record<string, string> = {
   closed: "Closed",
@@ -25,11 +28,13 @@ export default async function SalesDashboardPage({
 
   const { client } = await searchParams;
   const { active, options } = await resolveClientScope(ctx, client);
-  if (!active) return <p className="text-neutral-400">No client available.</p>;
+  if (!active) return <p className="text-ink-soft">No client available.</p>;
 
   const today = todayIso();
   const mtdCalls = await loadCalls(active.id, monthStartIso(), today);
   const todaysCalls = mtdCalls.filter((c) => c.date === today);
+  const notifications = await loadNotifications(active.id);
+  const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
 
   // First-call gate: a closer must log their first call today to unlock.
   const isCloser = ctx.memberships.some(
@@ -51,7 +56,7 @@ export default async function SalesDashboardPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Sales dashboard</h1>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-ink-soft">
             {active.name} · {active.reportingCurrency}
           </p>
         </div>
@@ -59,10 +64,10 @@ export default async function SalesDashboardPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h2 className="mb-3 text-sm font-medium text-neutral-300">Log a call</h2>
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">Log a call</h2>
           {gated && (
-            <p className="mb-3 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-300">
+            <p className="mb-3 rounded border border-accent-amber/30 bg-accent-amber/10 p-2 text-xs text-accent-amber">
               Log your first call of the day to unlock today’s metrics.
             </p>
           )}
@@ -70,8 +75,8 @@ export default async function SalesDashboardPage({
         </section>
 
         <div className={gated ? "pointer-events-none select-none blur-sm" : ""}>
-          <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-            <h2 className="mb-3 text-sm font-medium text-neutral-300">
+          <section className="card p-4">
+            <h2 className="mb-3 text-sm font-medium text-ink-soft">
               Outcomes (month to date)
             </h2>
             <OutcomePie data={pieData} />
@@ -80,18 +85,18 @@ export default async function SalesDashboardPage({
       </div>
 
       <section
-        className={`rounded-lg border border-neutral-800 bg-neutral-900 p-4 ${
+        className={`card p-4 ${
           gated ? "pointer-events-none select-none blur-sm" : ""
         }`}
       >
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
           Today’s calls ({todaysCalls.length})
         </h2>
         {todaysCalls.length === 0 ? (
-          <p className="text-sm text-neutral-500">No calls logged today yet.</p>
+          <p className="text-sm text-ink-faint">No calls logged today yet.</p>
         ) : (
           <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase text-neutral-500">
+            <thead className="text-xs uppercase text-ink-faint">
               <tr>
                 <th className="py-1">Outcome</th>
                 <th className="py-1">Revenue</th>
@@ -102,11 +107,11 @@ export default async function SalesDashboardPage({
             </thead>
             <tbody>
               {todaysCalls.map((c) => (
-                <tr key={c.id} className="border-t border-neutral-800">
+                <tr key={c.id} className="border-t border-line">
                   <td className="py-1.5">{OUTCOME_LABEL[c.outcome]}</td>
                   <td className="py-1.5">{formatMoney(c.revenue, c.currency)}</td>
                   <td className="py-1.5">{formatMoney(c.cashCollected, c.currency)}</td>
-                  <td className="py-1.5 text-neutral-400">{c.leadSource ?? "—"}</td>
+                  <td className="py-1.5 text-ink-soft">{c.leadSource ?? "—"}</td>
                   <td className="py-1.5">
                     <TagEditor id={c.id} tags={c.tags} />
                   </td>
@@ -116,6 +121,8 @@ export default async function SalesDashboardPage({
           </table>
         )}
       </section>
+
+      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} />
     </div>
   );
 }

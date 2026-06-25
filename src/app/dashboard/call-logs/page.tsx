@@ -26,7 +26,7 @@ export default async function CallLogsPage({
 
   const sp = await searchParams;
   const { active, options } = await resolveClientScope(ctx, sp.client);
-  if (!active) return <p className="text-neutral-400">No client available.</p>;
+  if (!active) return <p className="text-ink-soft">No client available.</p>;
 
   const preset = (sp.preset as DatePreset) ?? "this_month";
   const outcome = sp.outcome ?? "all";
@@ -60,18 +60,31 @@ export default async function CallLogsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Call logs</h1>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-ink-soft">
             {active.name} · {result.total} calls
           </p>
         </div>
-        <ClientSwitcher options={options} activeId={active.id} />
+        <div className="flex items-center gap-3">
+          <a
+            href={`/api/export/call-logs?${new URLSearchParams({
+              client: active.id,
+              preset,
+              outcome,
+              ...(search ? { search } : {}),
+            }).toString()}`}
+            className="btn-ghost"
+          >
+            Export CSV
+          </a>
+          <ClientSwitcher options={options} activeId={active.id} />
+        </div>
       </div>
 
       <CallLogFilters preset={preset} outcome={outcome} search={search} />
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <div className="card p-4">
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-neutral-500">
+          <thead className="text-xs uppercase text-ink-faint">
             <tr>
               <th className="py-1">Date</th>
               <th className="py-1">Outcome</th>
@@ -88,7 +101,7 @@ export default async function CallLogsPage({
             ))}
             {result.rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-6 text-center text-neutral-500">
+                <td colSpan={7} className="py-6 text-center text-ink-faint">
                   No calls match these filters.
                 </td>
               </tr>
@@ -99,17 +112,17 @@ export default async function CallLogsPage({
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
-          <span className="text-neutral-500">
+          <span className="text-ink-faint">
             Page {page} of {totalPages}
           </span>
           <div className="flex gap-2">
             {page > 1 && (
-              <Link href={pageHref(page - 1)} className="rounded border border-neutral-700 px-3 py-1 hover:text-white">
+              <Link href={pageHref(page - 1)} className="rounded border border-line px-3 py-1 hover:text-ink">
                 Previous
               </Link>
             )}
             {page < totalPages && (
-              <Link href={pageHref(page + 1)} className="rounded border border-neutral-700 px-3 py-1 hover:text-white">
+              <Link href={pageHref(page + 1)} className="rounded border border-line px-3 py-1 hover:text-ink">
                 Next
               </Link>
             )}

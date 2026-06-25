@@ -40,8 +40,8 @@ export function CallLogFilters({
             onClick={() => update({ preset: p.value })}
             className={`rounded px-2 py-1 ${
               preset === p.value
-                ? "bg-brand text-black"
-                : "border border-neutral-700 text-neutral-300 hover:text-white"
+                ? "bg-brand text-white"
+                : "border border-line text-ink-soft hover:text-ink"
             }`}
           >
             {p.label}
@@ -49,12 +49,12 @@ export function CallLogFilters({
         ))}
       </div>
 
-      <label className="flex items-center gap-1 text-neutral-400">
+      <label className="flex items-center gap-1 text-ink-soft">
         Outcome
         <select
           value={outcome}
           onChange={(e) => update({ outcome: e.target.value })}
-          className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 outline-none focus:border-brand"
+          className="rounded border border-line bg-surface-sunken px-2 py-1 outline-none focus:border-brand"
         >
           {OUTCOMES.map((o) => (
             <option key={o} value={o}>{o}</option>
@@ -74,9 +74,9 @@ export function CallLogFilters({
           name="search"
           defaultValue={search}
           placeholder="Search source / objection / notes"
-          className="w-56 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 outline-none focus:border-brand"
+          className="w-56 rounded border border-line bg-surface-sunken px-2 py-1 outline-none focus:border-brand"
         />
-        <button className="rounded border border-neutral-700 px-2 py-1 text-neutral-300 hover:text-white">
+        <button className="rounded border border-line px-2 py-1 text-ink-soft hover:text-ink">
           Search
         </button>
       </form>

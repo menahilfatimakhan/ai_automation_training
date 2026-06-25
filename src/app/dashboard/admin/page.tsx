@@ -10,9 +10,9 @@ import {
 } from "@/app/dashboard/admin/actions";
 
 const inputCls =
-  "rounded border border-neutral-700 bg-neutral-950 px-2 py-1 text-sm outline-none focus:border-brand";
+  "rounded border border-line bg-surface-sunken px-2 py-1 text-sm outline-none focus:border-brand";
 const btnCls =
-  "rounded bg-brand px-3 py-1.5 text-sm font-medium text-black hover:bg-brand-dark";
+  "rounded bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark";
 
 export default async function AdminPage() {
   const ctx = await getSessionContext();
@@ -34,8 +34,8 @@ export default async function AdminPage() {
       <h1 className="text-xl font-semibold">Admin settings</h1>
 
       {/* ── Monthly goals ─────────────────────────────────────────────── */}
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
           Monthly goals · {month}
         </h2>
         <div className="space-y-3">
@@ -51,7 +51,7 @@ export default async function AdminPage() {
                 <input type="hidden" name="month" value={month} />
                 <input type="hidden" name="currency" value={c.reportingCurrency} />
                 <div className="w-32 text-sm">{c.name}</div>
-                <label className="text-xs text-neutral-400">
+                <label className="text-xs text-ink-soft">
                   Revenue goal ({c.reportingCurrency})
                   <input
                     name="revenueGoal"
@@ -61,7 +61,7 @@ export default async function AdminPage() {
                     className={`mt-1 block w-36 ${inputCls}`}
                   />
                 </label>
-                <label className="text-xs text-neutral-400">
+                <label className="text-xs text-ink-soft">
                   Calls goal
                   <input
                     name="callsGoal"
@@ -78,13 +78,13 @@ export default async function AdminPage() {
       </section>
 
       {/* ── Memberships ──────────────────────────────────────────────── */}
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
           User ↔ client assignments
         </h2>
 
         <table className="mb-4 w-full text-left text-sm">
-          <thead className="text-xs uppercase text-neutral-500">
+          <thead className="text-xs uppercase text-ink-faint">
             <tr>
               <th className="py-1">User</th>
               <th className="py-1">Client</th>
@@ -94,14 +94,14 @@ export default async function AdminPage() {
           </thead>
           <tbody>
             {memberships.map((m) => (
-              <tr key={m.id} className="border-t border-neutral-800">
+              <tr key={m.id} className="border-t border-line">
                 <td className="py-1.5">{userLabel(m.userId)}</td>
                 <td className="py-1.5">{clientName(m.clientId)}</td>
                 <td className="py-1.5">{m.role}</td>
                 <td className="py-1.5 text-right">
                   <form action={removeMembership}>
                     <input type="hidden" name="id" value={m.id} />
-                    <button className="text-xs text-red-400 hover:text-red-300">
+                    <button className="text-xs text-accent-rose hover:text-accent-rose">
                       Remove
                     </button>
                   </form>
@@ -112,7 +112,7 @@ export default async function AdminPage() {
         </table>
 
         <form action={assignMembership} className="flex flex-wrap items-end gap-3">
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-soft">
             User
             <select name="userId" className={`mt-1 block ${inputCls}`} required>
               {users.map((u) => (
@@ -122,7 +122,7 @@ export default async function AdminPage() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-soft">
             Client
             <select name="clientId" className={`mt-1 block ${inputCls}`} required>
               {clients.map((c) => (
@@ -132,7 +132,7 @@ export default async function AdminPage() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-soft">
             Role
             <select name="role" className={`mt-1 block ${inputCls}`}>
               <option value="closer">closer</option>
@@ -145,18 +145,18 @@ export default async function AdminPage() {
       </section>
 
       {/* ── Connect ad account ───────────────────────────────────────── */}
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-1 text-sm font-medium text-neutral-300">
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-medium text-ink-soft">
           Connect ad account
         </h2>
-        <p className="mb-3 text-xs text-neutral-500">
+        <p className="mb-3 text-xs text-ink-faint">
           Writes <code>ad_connections</code> only. No real Meta call yet — the
           token is stored as a secret reference (e.g. <code>env:META_TOKEN_ACME</code>),
           never plaintext. See docs/INTEGRATIONS.md to go live.
         </p>
 
         <table className="mb-4 w-full text-left text-sm">
-          <thead className="text-xs uppercase text-neutral-500">
+          <thead className="text-xs uppercase text-ink-faint">
             <tr>
               <th className="py-1">Client</th>
               <th className="py-1">Ad account</th>
@@ -166,11 +166,11 @@ export default async function AdminPage() {
           </thead>
           <tbody>
             {connections.map((a) => (
-              <tr key={`${a.clientId}:${a.adAccountId}`} className="border-t border-neutral-800">
+              <tr key={`${a.clientId}:${a.adAccountId}`} className="border-t border-line">
                 <td className="py-1.5">{clientName(a.clientId)}</td>
                 <td className="py-1.5">{a.adAccountId}</td>
-                <td className="py-1.5 text-neutral-400">{a.accessTokenRef ?? "—"}</td>
-                <td className="py-1.5 text-neutral-400">
+                <td className="py-1.5 text-ink-soft">{a.accessTokenRef ?? "—"}</td>
+                <td className="py-1.5 text-ink-soft">
                   {a.lastSyncedAt ? new Date(a.lastSyncedAt).toLocaleString() : "Never"}
                 </td>
               </tr>
@@ -179,7 +179,7 @@ export default async function AdminPage() {
         </table>
 
         <form action={connectAdAccount} className="flex flex-wrap items-end gap-3">
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-soft">
             Client
             <select name="clientId" className={`mt-1 block ${inputCls}`} required>
               {clients.map((c) => (
@@ -189,11 +189,11 @@ export default async function AdminPage() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-soft">
             Ad account id
             <input name="adAccountId" placeholder="act_1001" className={`mt-1 block ${inputCls}`} required />
           </label>
-          <label className="text-xs text-neutral-400">
+          <label className="text-xs text-ink-soft">
             Access token ref
             <input name="accessTokenRef" placeholder="env:META_TOKEN_ACME" className={`mt-1 block w-52 ${inputCls}`} />
           </label>

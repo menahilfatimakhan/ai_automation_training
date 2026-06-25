@@ -27,12 +27,12 @@ export function OverrideControl({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mt-3 border-t border-neutral-800 pt-2 text-xs">
+    <div className="mt-4 border-t border-line pt-3 text-xs">
       {!open ? (
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <button
             onClick={() => setOpen(true)}
-            className="text-neutral-400 hover:text-white"
+            className="text-ink-faint hover:text-ink"
           >
             Override
           </button>
@@ -42,7 +42,7 @@ export function OverrideControl({
               <input type="hidden" name="targetKey" value={targetKey} />
               <input type="hidden" name="periodStart" value={periodStart} />
               <input type="hidden" name="periodEnd" value={periodEnd} />
-              <button className="text-amber-400 hover:text-amber-300">
+              <button className="text-accent-amber hover:opacity-80">
                 Clear override
               </button>
             </form>
@@ -61,16 +61,14 @@ export function OverrideControl({
             type="number"
             step="any"
             defaultValue={computed}
-            className="w-24 rounded border border-neutral-700 bg-neutral-950 px-2 py-1 outline-none focus:border-brand"
+            className="input w-24 px-2 py-1"
             aria-label="Override value"
           />
-          <button className="rounded bg-brand px-2 py-1 font-medium text-black hover:bg-brand-dark">
-            Save
-          </button>
+          <button className="btn-primary px-3 py-1">Save</button>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-neutral-400 hover:text-white"
+            className="btn-subtle"
           >
             Cancel
           </button>

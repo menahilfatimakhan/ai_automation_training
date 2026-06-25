@@ -16,18 +16,15 @@ export function SyncButton({
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-neutral-500">{lastSyncedLabel}</span>
+      <span className="text-xs text-ink-faint">{lastSyncedLabel}</span>
       <form action={action}>
         <input type="hidden" name="clientId" value={clientId} />
-        <button
-          disabled={pending}
-          className="rounded bg-brand px-3 py-1.5 text-sm font-medium text-black hover:bg-brand-dark disabled:opacity-50"
-        >
+        <button disabled={pending} className="btn-primary py-1.5">
           {pending ? "Syncing…" : "Sync now"}
         </button>
       </form>
       {state.message && (
-        <span className={`text-xs ${state.ok ? "text-brand" : "text-amber-400"}`}>
+        <span className={`text-xs ${state.ok ? "text-brand" : "text-accent-amber"}`}>
           {state.message}
         </span>
       )}

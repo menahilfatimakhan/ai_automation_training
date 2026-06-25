@@ -1,6 +1,10 @@
 "use client";
 
-import { runInsights, runNextBestAction } from "@/app/dashboard/ai-actions";
+import {
+  runInsights,
+  runNextBestAction,
+  markNotificationsRead,
+} from "@/app/dashboard/ai-actions";
 import type { NotificationRow } from "@/lib/data/notifications";
 
 const KIND_LABEL: Record<string, string> = {
@@ -24,21 +28,28 @@ export function AiPanel({
   notifications: NotificationRow[];
   readOnly: boolean;
 }) {
+  const unread = notifications.filter((n) => !n.read).length;
+
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-neutral-300">AI coaching</h2>
+    <div className="card p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="panel-title">AI coaching</h2>
+          {unread > 0 && (
+            <span className="badge bg-brand-soft text-brand">{unread} new</span>
+          )}
+        </div>
         {!readOnly && (
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <form action={runInsights}>
               <input type="hidden" name="clientId" value={clientId} />
-              <button className="rounded border border-sky-500/40 px-2 py-1 text-xs text-sky-300 hover:bg-sky-500/10">
+              <button className="rounded-lg border border-brand/40 px-2.5 py-1 text-xs text-brand hover:bg-brand-soft">
                 Generate insights
               </button>
             </form>
             <form action={runNextBestAction}>
               <input type="hidden" name="clientId" value={clientId} />
-              <button className="rounded border border-sky-500/40 px-2 py-1 text-xs text-sky-300 hover:bg-sky-500/10">
+              <button className="rounded-lg border border-brand/40 px-2.5 py-1 text-xs text-brand hover:bg-brand-soft">
                 Next best action
               </button>
             </form>
@@ -47,26 +58,43 @@ export function AiPanel({
       </div>
 
       {notifications.length === 0 ? (
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink-faint">
           No AI messages yet. Generate insights to get coaching.
         </p>
       ) : (
-        <ul className="space-y-2">
-          {notifications.map((n) => (
-            <li key={n.id} className="rounded border border-neutral-800 bg-neutral-950 p-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sky-300">
-                  {KIND_LABEL[n.kind] ?? n.kind}
-                </span>
-                <span className="text-neutral-600">
-                  {new Date(n.createdAt).toLocaleString()}
-                </span>
-              </div>
-              <div className="mt-0.5 font-medium text-neutral-200">{n.title}</div>
-              <div className="text-neutral-400">{n.body}</div>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="space-y-2">
+            {notifications.map((n) => (
+              <li
+                key={n.id}
+                className={`rounded-lg border p-2.5 text-xs ${
+                  n.read
+                    ? "border-line bg-surface-sunken"
+                    : "border-brand/30 bg-brand-soft"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-brand">
+                    {KIND_LABEL[n.kind] ?? n.kind}
+                  </span>
+                  <span className="text-ink-faint">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="mt-0.5 font-medium text-ink">{n.title}</div>
+                <div className="text-ink-soft">{n.body}</div>
+              </li>
+            ))}
+          </ul>
+          {unread > 0 && (
+            <form action={markNotificationsRead} className="mt-3">
+              <input type="hidden" name="clientId" value={clientId} />
+              <button className="text-xs text-ink-faint hover:text-ink">
+                Mark all as read
+              </button>
+            </form>
+          )}
+        </>
       )}
     </div>
   );

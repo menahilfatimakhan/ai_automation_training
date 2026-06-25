@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
+import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { loadAdMetrics, loadCampaigns } from "@/lib/data/dashboards";
+import { loadNotifications } from "@/lib/data/notifications";
+import { AiPanel } from "@/components/AiPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { daysAgoIso, todayIso } from "@/lib/format";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
@@ -30,13 +33,15 @@ export default async function AdsDashboardPage({
 
   const { client } = await searchParams;
   const { active, options } = await resolveClientScope(ctx, client);
-  if (!active) return <p className="text-neutral-400">No client available.</p>;
+  if (!active) return <p className="text-ink-soft">No client available.</p>;
 
-  const [campaigns, metrics, syncedLabel] = await Promise.all([
+  const [campaigns, metrics, syncedLabel, notifications] = await Promise.all([
     loadCampaigns(active.id),
     loadAdMetrics(active.id, daysAgoIso(29), todayIso()),
     lastSyncedLabel(active.id),
+    loadNotifications(active.id),
   ]);
+  const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
 
   // Aggregate metrics per campaign (last 30 days).
   const aggByCampaign = new Map<string, CampaignAggregate>();
@@ -87,7 +92,7 @@ export default async function AdsDashboardPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Ads dashboard</h1>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-ink-soft">
             {active.name} · read-only · last 30 days
           </p>
         </div>
@@ -97,15 +102,17 @@ export default async function AdsDashboardPage({
         </div>
       </div>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">Spend trend</h2>
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">Spend trend</h2>
         <SeriesBarChart data={spendTrend} dataKey="spend" color="#f59e0b" />
       </section>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">Campaigns</h2>
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">Campaigns</h2>
         <AdCampaignTable rows={rows} />
       </section>
+
+      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} />
     </div>
   );
 }

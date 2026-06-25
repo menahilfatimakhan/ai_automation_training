@@ -97,6 +97,26 @@ export async function acceptSuggestion(formData: FormData) {
   revalidatePath("/dashboard/master");
 }
 
+/** Mark all of a client's in-app notifications as read for the current viewer. */
+export async function markNotificationsRead(formData: FormData) {
+  const ctx = await getSessionContext();
+  if (!ctx) throw new Error("Not authenticated");
+  const clientId = String(formData.get("clientId"));
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("client_id", clientId)
+    .eq("read", false);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard/master");
+  revalidatePath("/dashboard/sales");
+  revalidatePath("/dashboard/setter");
+  revalidatePath("/dashboard/ads");
+}
+
 export async function dismissSuggestion(formData: FormData) {
   const ctx = await getSessionContext();
   if (!ctx) throw new Error("Not authenticated");

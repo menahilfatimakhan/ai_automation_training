@@ -80,12 +80,12 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
-        <label className="flex items-center gap-1 text-neutral-400">
+        <label className="flex items-center gap-1 text-ink-soft">
           Status
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="rounded border border-neutral-700 bg-neutral-950 px-2 py-1 outline-none focus:border-brand"
+            className="rounded border border-line bg-surface-sunken px-2 py-1 outline-none focus:border-brand"
           >
             {statuses.map((s) => (
               <option key={s} value={s}>
@@ -95,7 +95,7 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
           </select>
         </label>
 
-        <div className="flex items-center gap-2 text-neutral-400">
+        <div className="flex items-center gap-2 text-ink-soft">
           <span>Columns:</span>
           {COLUMNS.filter((c) => c.key !== "name").map((c) => (
             <label key={c.key} className="flex items-center gap-1">
@@ -116,7 +116,7 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
       </div>
 
       <table className="w-full text-left text-sm">
-        <thead className="text-xs uppercase text-neutral-500">
+        <thead className="text-xs uppercase text-ink-faint">
           <tr>
             {visibleCols.map((c) => (
               <th
@@ -138,7 +138,7 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
         </thead>
         <tbody>
           {filtered.map((r) => (
-            <tr key={r.campaignId} className="border-t border-neutral-800">
+            <tr key={r.campaignId} className="border-t border-line">
               {visibleCols.map((c) => (
                 <td key={c.key} className={`py-1.5 ${c.numeric ? "text-right tabular-nums" : ""}`}>
                   {fmt(c.key, r)}
@@ -148,7 +148,7 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
           ))}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={visibleCols.length} className="py-4 text-center text-neutral-500">
+              <td colSpan={visibleCols.length} className="py-4 text-center text-ink-faint">
                 No campaigns match.
               </td>
             </tr>

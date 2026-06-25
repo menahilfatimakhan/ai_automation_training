@@ -4,7 +4,7 @@ import { logSetterDay } from "@/app/dashboard/setter/actions";
 import { todayIso } from "@/lib/format";
 
 const inputCls =
-  "mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-sm outline-none focus:border-brand";
+  "mt-1 w-full rounded border border-line bg-surface-sunken px-2 py-1.5 text-sm outline-none focus:border-brand";
 
 const FIELDS: { name: string; label: string }[] = [
   { name: "conversations", label: "Conversations" },
@@ -24,7 +24,7 @@ export function LogDayForm({
   return (
     <form action={logSetterDay} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <input type="hidden" name="clientId" value={clientId} />
-      <label className="text-xs text-neutral-400">
+      <label className="text-xs text-ink-soft">
         Date
         <input
           type="date"
@@ -34,7 +34,7 @@ export function LogDayForm({
         />
       </label>
       {FIELDS.map((f) => (
-        <label key={f.name} className="text-xs text-neutral-400">
+        <label key={f.name} className="text-xs text-ink-soft">
           {f.label}
           <input
             type="number"
@@ -45,7 +45,7 @@ export function LogDayForm({
           />
         </label>
       ))}
-      <button className="col-span-2 rounded bg-brand px-3 py-2 text-sm font-medium text-black hover:bg-brand-dark sm:col-span-3">
+      <button className="col-span-2 rounded bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark sm:col-span-3">
         Save day
       </button>
     </form>

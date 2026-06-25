@@ -20,7 +20,7 @@ export default async function MasterDashboardPage({
   const { client } = await searchParams;
   const { active, options } = await resolveClientScope(ctx, client);
   if (!active) {
-    return <p className="text-neutral-400">No clients available for your account.</p>;
+    return <p className="text-ink-soft">No clients available for your account.</p>;
   }
 
   const [view, notifications] = await Promise.all([
@@ -34,7 +34,7 @@ export default async function MasterDashboardPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Master dashboard</h1>
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-ink-soft">
             {active.name} · month to date · {active.reportingCurrency}
           </p>
         </div>
@@ -55,8 +55,8 @@ export default async function MasterDashboardPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h2 className="mb-3 text-sm font-medium text-neutral-300">
+        <div className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">
             Revenue trend (closed deals, MTD)
           </h2>
           <RevenueTrendChart data={view.revenueTrend} />

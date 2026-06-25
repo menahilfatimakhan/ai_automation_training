@@ -2,12 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-app text-ink font-sans;
+    /* Subtle top glow for depth, like the reference. */
+    background-image: radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(59, 130, 246, 0.08),
+      transparent 60%
+    );
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(59, 130, 246, 0.28);
+  }
+
+  /* Quiet, modern scrollbars. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.6);
+    outline-offset: 2px;
+  }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
+@layer components {
+  /* Elevated surface used for every panel/card. */
+  .card {
+    @apply rounded-xl border border-line bg-surface shadow-card;
+  }
+
+  .panel-title {
+    @apply text-sm font-medium text-ink;
+  }
+
+  .subtle {
+    @apply text-ink-soft;
+  }
+
+  .faint {
+    @apply text-ink-faint;
+  }
+
+  /* Form controls. */
+  .input {
+    @apply w-full rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm text-ink
+      placeholder:text-ink-faint transition-colors;
+  }
+  .input:focus {
+    @apply border-brand outline-none;
+  }
+
+  /* Buttons. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm
+      font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-dark;
+  }
+  .btn-ghost {
+    @apply btn border border-line text-ink-soft hover:border-line-strong hover:text-ink;
+  }
+  .btn-subtle {
+    @apply btn text-ink-soft hover:text-ink;
+  }
+
+  /* Pills / badges. */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-md bg-surface-raised px-1.5 py-0.5 text-[11px] text-ink-soft;
+  }
+
+  /* Table header cells. */
+  .th {
+    @apply px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-ink-faint;
+  }
+  .td {
+    @apply px-3 py-2.5 align-middle;
+  }
 }

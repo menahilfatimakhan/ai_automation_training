@@ -5,6 +5,7 @@ export interface NotificationRow {
   kind: string;
   title: string;
   body: string;
+  read: boolean;
   createdAt: string;
 }
 
@@ -16,7 +17,7 @@ export async function loadNotifications(
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("notifications")
-    .select("id, kind, title, body, created_at")
+    .select("id, kind, title, body, read, created_at")
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -25,6 +26,7 @@ export async function loadNotifications(
     kind: n.kind,
     title: n.title,
     body: n.body,
+    read: n.read,
     createdAt: n.created_at,
   }));
 }

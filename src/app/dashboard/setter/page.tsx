@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
+import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { loadSetterActivity } from "@/lib/data/dashboards";
+import { loadNotifications } from "@/lib/data/notifications";
+import { AiPanel } from "@/components/AiPanel";
 import { computeSetterKpis } from "@/lib/kpi/engine";
 import { daysAgoIso, todayIso, formatPercent, formatNumber } from "@/lib/format";
 import { LogDayForm } from "@/components/LogDayForm";
@@ -18,11 +21,13 @@ export default async function SetterDashboardPage({
 
   const { client } = await searchParams;
   const { active, options } = await resolveClientScope(ctx, client);
-  if (!active) return <p className="text-neutral-400">No client available.</p>;
+  if (!active) return <p className="text-ink-soft">No client available.</p>;
 
   const rows = await loadSetterActivity(active.id, daysAgoIso(29), todayIso());
   const kpis = computeSetterKpis(rows);
   const trend = rows.map((r) => ({ date: r.date, callsBooked: r.callsBooked }));
+  const notifications = await loadNotifications(active.id);
+  const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
 
   const cards = [
     { label: "Conversations", value: formatNumber(kpis.conversations) },
@@ -41,7 +46,7 @@ export default async function SetterDashboardPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Setter dashboard</h1>
-          <p className="text-sm text-neutral-400">{active.name} · last 30 days</p>
+          <p className="text-sm text-ink-soft">{active.name} · last 30 days</p>
         </div>
         <ClientSwitcher options={options} activeId={active.id} />
       </div>
@@ -50,34 +55,34 @@ export default async function SetterDashboardPage({
         {cards.map((c) => (
           <div
             key={c.label}
-            className="rounded-lg border border-neutral-800 bg-neutral-900 p-3"
+            className="card p-3"
           >
-            <div className="text-xs text-neutral-400">{c.label}</div>
+            <div className="text-xs text-ink-soft">{c.label}</div>
             <div className="mt-1 text-lg font-semibold">{c.value}</div>
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h2 className="mb-3 text-sm font-medium text-neutral-300">Log a day</h2>
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">Log a day</h2>
           <LogDayForm clientId={active.id} />
         </section>
 
-        <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <h2 className="mb-3 text-sm font-medium text-neutral-300">
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">
             Calls booked (trend)
           </h2>
           <SeriesBarChart data={trend} dataKey="callsBooked" color="#3b82f6" />
         </section>
       </div>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
           Recent days (editable — re-log a date to update it)
         </h2>
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-neutral-500">
+          <thead className="text-xs uppercase text-ink-faint">
             <tr>
               <th className="py-1">Date</th>
               <th className="py-1">Conv.</th>
@@ -89,7 +94,7 @@ export default async function SetterDashboardPage({
           </thead>
           <tbody>
             {recent.map((r) => (
-              <tr key={r.id} className="border-t border-neutral-800">
+              <tr key={r.id} className="border-t border-line">
                 <td className="py-1.5">{r.date}</td>
                 <td className="py-1.5">{r.conversations}</td>
                 <td className="py-1.5">{r.replies}</td>
@@ -101,6 +106,8 @@ export default async function SetterDashboardPage({
           </tbody>
         </table>
       </section>
+
+      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} />
     </div>
   );
 }

@@ -18,10 +18,10 @@ export function LeadRow({
     members.find((m) => m.userId === lead.ownerUserId)?.name ?? "Unassigned";
 
   return (
-    <tr className="border-t border-neutral-800">
+    <tr className="border-t border-line">
       <td className="py-1.5">{lead.name}</td>
-      <td className="py-1.5 text-neutral-400">{lead.contact ?? "—"}</td>
-      <td className="py-1.5 text-neutral-400">{lead.source ?? "—"}</td>
+      <td className="py-1.5 text-ink-soft">{lead.contact ?? "—"}</td>
+      <td className="py-1.5 text-ink-soft">{lead.source ?? "—"}</td>
       <td className="py-1.5">{lead.status}</td>
       <td className="py-1.5">
         {editingTags ? (
@@ -31,19 +31,19 @@ export function LeadRow({
               name="tags"
               defaultValue={lead.tags.join(", ")}
               autoFocus
-              className="w-40 rounded border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[11px] outline-none focus:border-brand"
+              className="w-40 rounded border border-line bg-surface-sunken px-1.5 py-0.5 text-[11px] outline-none focus:border-brand"
             />
             <button className="text-[11px] text-brand hover:underline">save</button>
           </form>
         ) : (
           <div className="flex flex-wrap items-center gap-1">
-            {lead.tags.length === 0 && <span className="text-neutral-500">—</span>}
+            {lead.tags.length === 0 && <span className="text-ink-faint">—</span>}
             {lead.tags.map((t) => (
-              <span key={t} className="rounded bg-neutral-800 px-1.5 py-0.5 text-[11px]">
+              <span key={t} className="rounded bg-surface-raised px-1.5 py-0.5 text-[11px]">
                 {t}
               </span>
             ))}
-            <button onClick={() => setEditingTags(true)} className="text-[11px] text-neutral-500 hover:text-white">
+            <button onClick={() => setEditingTags(true)} className="text-[11px] text-ink-faint hover:text-ink">
               edit
             </button>
           </div>
@@ -57,7 +57,7 @@ export function LeadRow({
               name="ownerUserId"
               defaultValue={lead.ownerUserId ?? ""}
               onChange={(e) => e.currentTarget.form?.requestSubmit()}
-              className="rounded border border-neutral-700 bg-neutral-950 px-1.5 py-0.5 text-[11px] outline-none focus:border-brand"
+              className="rounded border border-line bg-surface-sunken px-1.5 py-0.5 text-[11px] outline-none focus:border-brand"
             >
               <option value="">Unassigned</option>
               {members.map((m) => (
@@ -68,7 +68,7 @@ export function LeadRow({
             </select>
           </form>
         ) : (
-          <span className="text-neutral-400">{ownerName}</span>
+          <span className="text-ink-soft">{ownerName}</span>
         )}
       </td>
     </tr>

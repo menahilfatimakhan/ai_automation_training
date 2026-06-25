@@ -16,7 +16,7 @@ export default async function LeadsPage({
 
   const { client } = await searchParams;
   const { active, options } = await resolveClientScope(ctx, client);
-  if (!active) return <p className="text-neutral-400">No client available.</p>;
+  if (!active) return <p className="text-ink-soft">No client available.</p>;
 
   const [leads, members] = await Promise.all([
     loadLeads(active.id),
@@ -36,17 +36,17 @@ export default async function LeadsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Leads & follow-ups</h1>
-          <p className="text-sm text-neutral-400">{active.name}</p>
+          <p className="text-sm text-ink-soft">{active.name}</p>
         </div>
         <ClientSwitcher options={options} activeId={active.id} />
       </div>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-2 text-sm font-medium text-neutral-300">
+      <section className="card p-4">
+        <h2 className="mb-2 text-sm font-medium text-ink-soft">
           {ctx.isAdmin ? "Follow-up queue (all)" : "My follow-up queue"}
         </h2>
         {followUps.length === 0 ? (
-          <p className="text-sm text-neutral-500">No follow-ups.</p>
+          <p className="text-sm text-ink-faint">No follow-ups.</p>
         ) : (
           <ul>
             {followUps.map((f) => (
@@ -64,10 +64,10 @@ export default async function LeadsPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-medium text-neutral-300">Leads</h2>
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">Leads</h2>
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase text-neutral-500">
+          <thead className="text-xs uppercase text-ink-faint">
             <tr>
               <th className="py-1">Name</th>
               <th className="py-1">Contact</th>
@@ -83,7 +83,7 @@ export default async function LeadsPage({
             ))}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-6 text-center text-neutral-500">
+                <td colSpan={6} className="py-6 text-center text-ink-faint">
                   No leads yet.
                 </td>
               </tr>

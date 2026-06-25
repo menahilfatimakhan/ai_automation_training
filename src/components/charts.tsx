@@ -1,11 +1,12 @@
 "use client";
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   Cell,
-  Line,
-  LineChart,
+  CartesianGrid,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -14,8 +15,19 @@ import {
   YAxis,
 } from "recharts";
 
-const AXIS = { stroke: "#525252", fontSize: 11 };
-const GRID = "#262626";
+const AXIS = { stroke: "#6C6C74", fontSize: 11 };
+const GRID = "rgba(255,255,255,0.06)";
+const TOOLTIP = {
+  background: "#17181C",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 10,
+  fontSize: 12,
+  boxShadow: "0 16px 40px -12px rgba(0,0,0,0.65)",
+};
+
+function shortDate(d: string) {
+  return d?.slice(5); // MM-DD
+}
 
 export function RevenueTrendChart({
   data,
@@ -24,46 +36,58 @@ export function RevenueTrendChart({
 }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-        <XAxis dataKey="date" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} />
-        <YAxis tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} width={48} />
-        <Tooltip
-          contentStyle={{ background: "#0a0a0a", border: "1px solid #262626", fontSize: 12 }}
-          labelStyle={{ color: "#a3a3a3" }}
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.4} />
+            <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} tickLine={false} axisLine={false} />
+        <YAxis tick={AXIS} tickLine={false} axisLine={false} width={48} />
+        <Tooltip contentStyle={TOOLTIP} labelStyle={{ color: "#9AA3B8" }} cursor={{ stroke: GRID }} />
+        <Area
+          type="monotone"
+          dataKey="revenue"
+          stroke="#3B82F6"
+          strokeWidth={2}
+          fill="url(#revFill)"
         />
-        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} dot={false} />
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }
 
 const PIE_COLORS: Record<string, string> = {
-  closed: "#10b981",
-  rescheduled: "#3b82f6",
-  lost: "#ef4444",
-  no_show: "#a3a3a3",
+  closed: "#3B82F6",
+  rescheduled: "#60A5FA",
+  lost: "#FB7185",
+  no_show: "#646E86",
 };
 
-export function OutcomePie({
-  data,
-}: {
-  data: { name: string; value: number }[];
-}) {
+export function OutcomePie({ data }: { data: { name: string; value: number }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) {
-    return <p className="py-12 text-center text-sm text-neutral-500">No calls yet.</p>;
+    return <p className="py-14 text-center text-sm text-ink-faint">No calls yet.</p>;
   }
   return (
     <ResponsiveContainer width="100%" height={240}>
       <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={48} outerRadius={88}>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={54}
+          outerRadius={92}
+          paddingAngle={2}
+          stroke="none"
+        >
           {data.map((d) => (
-            <Cell key={d.name} fill={PIE_COLORS[d.name] ?? "#737373"} />
+            <Cell key={d.name} fill={PIE_COLORS[d.name] ?? "#6C6C74"} />
           ))}
         </Pie>
-        <Tooltip
-          contentStyle={{ background: "#0a0a0a", border: "1px solid #262626", fontSize: 12 }}
-        />
+        <Tooltip contentStyle={TOOLTIP} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -72,7 +96,7 @@ export function OutcomePie({
 export function SeriesBarChart({
   data,
   dataKey,
-  color = "#10b981",
+  color = "#3B82F6",
 }: {
   data: { date: string; [k: string]: number | string }[];
   dataKey: string;
@@ -80,14 +104,12 @@ export function SeriesBarChart({
 }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-        <XAxis dataKey="date" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} />
-        <YAxis tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} width={48} />
-        <Tooltip
-          contentStyle={{ background: "#0a0a0a", border: "1px solid #262626", fontSize: 12 }}
-          labelStyle={{ color: "#a3a3a3" }}
-        />
-        <Bar dataKey={dataKey} fill={color} radius={[2, 2, 0, 0]} />
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} tickLine={false} axisLine={false} />
+        <YAxis tick={AXIS} tickLine={false} axisLine={false} width={48} />
+        <Tooltip contentStyle={TOOLTIP} labelStyle={{ color: "#A0A0A8" }} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+        <Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );
