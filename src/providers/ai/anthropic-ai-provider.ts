@@ -3,6 +3,7 @@ import type {
   AiAdvice,
   AiContext,
   AiProvider,
+  ChatMessage,
 } from "@/providers/ports/ai-provider";
 
 /**
@@ -63,6 +64,29 @@ export class AnthropicAiProvider implements AiProvider {
       .join("");
 
     return parseAdvice(text);
+  }
+
+  async chat(
+    context: { clientName: string; currency: string; metrics: Record<string, number | string> },
+    messages: ChatMessage[],
+  ): Promise<string> {
+    const system = `You are "Coach", an advisory sales/marketing analyst inside an agency dashboard for client "${context.clientName}" (reporting currency ${context.currency}).
+RULES: The metrics below are authoritative and already computed — NEVER invent, recompute, or alter numbers; only explain them and recommend actions. Be concise, practical, and specific. Plain text only.
+Authoritative metrics: ${JSON.stringify(context.metrics)}`;
+
+    const resp = await this.client.messages.create({
+      model: this.model,
+      max_tokens: 600,
+      system: [
+        { type: "text", text: system, cache_control: { type: "ephemeral" } } as unknown as Anthropic.TextBlockParam,
+      ],
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    });
+
+    return resp.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("");
   }
 }
 

@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { daysAgoIso, todayIso } from "@/lib/format";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { SyncButton } from "@/components/SyncButton";
-import { SeriesBarChart } from "@/components/charts";
+import { SeriesBarChart, HBarChart } from "@/components/charts";
 import { AdCampaignTable, type CampaignAggregate } from "@/components/AdCampaignTable";
 
 async function lastSyncedLabel(clientId: string): Promise<string> {
@@ -87,6 +87,20 @@ export default async function AdsDashboardPage({
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([date, spend]) => ({ date, spend: Math.round(spend) }));
 
+  // Daily results trend + spend share by campaign.
+  const resultsByDate = new Map<string, number>();
+  for (const m of metrics) {
+    resultsByDate.set(m.date, (resultsByDate.get(m.date) ?? 0) + m.results);
+  }
+  const resultsTrend = [...resultsByDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, results]) => ({ date, results }));
+
+  const spendByCampaign = rows
+    .map((r) => ({ label: r.name.replace(/^[^—]*—\s*/, ""), value: Math.round(r.spend) }))
+    .filter((r) => r.value > 0)
+    .sort((a, b) => b.value - a.value);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,9 +116,22 @@ export default async function AdsDashboardPage({
         </div>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">Spend trend</h2>
+          <SeriesBarChart data={spendTrend} dataKey="spend" color="#f59e0b" />
+        </section>
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">Results trend (leads)</h2>
+          <SeriesBarChart data={resultsTrend} dataKey="results" color="#3B82F6" />
+        </section>
+      </div>
+
       <section className="card p-4">
-        <h2 className="mb-3 text-sm font-medium text-ink-soft">Spend trend</h2>
-        <SeriesBarChart data={spendTrend} dataKey="spend" color="#f59e0b" />
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
+          Spend by campaign ({active.reportingCurrency})
+        </h2>
+        <HBarChart data={spendByCampaign} color="#f59e0b" height={200} />
       </section>
 
       <section className="card p-4">

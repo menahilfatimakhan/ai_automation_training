@@ -34,6 +34,8 @@ export interface MasterView {
   periodEnd: string;
   cards: KpiCardVM[];
   revenueTrend: { date: string; revenue: number }[];
+  /** Combined daily revenue (closed) + cash collected, for a dual-series chart. */
+  moneyTrend: { date: string; revenue: number; cash: number }[];
 }
 
 const CARD_DEFS: { key: MetricKey; label: string; format: MetricFormat }[] = [
@@ -140,16 +142,24 @@ export async function computeMasterView(
     return card;
   });
 
-  // Daily revenue trend (closed calls), oldest → newest.
-  const byDate = new Map<string, number>();
+  // Daily revenue (closed) + cash-collected (all calls), oldest → newest.
+  const revByDate = new Map<string, number>();
+  const cashByDate = new Map<string, number>();
   for (const c of callRows) {
     if (c.outcome === "closed") {
-      byDate.set(c.date, (byDate.get(c.date) ?? 0) + c.revenue);
+      revByDate.set(c.date, (revByDate.get(c.date) ?? 0) + c.revenue);
+    }
+    if (c.cashCollected) {
+      cashByDate.set(c.date, (cashByDate.get(c.date) ?? 0) + c.cashCollected);
     }
   }
-  const revenueTrend = [...byDate.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, revenue]) => ({ date, revenue }));
+  const dates = [...new Set([...revByDate.keys(), ...cashByDate.keys()])].sort();
+  const revenueTrend = dates.map((date) => ({ date, revenue: Math.round(revByDate.get(date) ?? 0) }));
+  const moneyTrend = dates.map((date) => ({
+    date,
+    revenue: Math.round(revByDate.get(date) ?? 0),
+    cash: Math.round(cashByDate.get(date) ?? 0),
+  }));
 
-  return { currency, periodStart, periodEnd, cards, revenueTrend };
+  return { currency, periodStart, periodEnd, cards, revenueTrend, moneyTrend };
 }

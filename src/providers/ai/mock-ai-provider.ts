@@ -2,6 +2,7 @@ import type {
   AiAdvice,
   AiContext,
   AiProvider,
+  ChatMessage,
 } from "@/providers/ports/ai-provider";
 
 /**
@@ -39,5 +40,42 @@ export class MockAiProvider implements AiProvider {
           suggestions: [],
         };
     }
+  }
+
+  /**
+   * Deterministic, offline chat. It grounds answers in the supplied metrics and
+   * the user's question — it never fabricates figures, mirroring the real
+   * provider's advisory-only contract.
+   */
+  async chat(
+    context: { clientName: string; currency: string; metrics: Record<string, number | string> },
+    messages: ChatMessage[],
+  ): Promise<string> {
+    const last = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const m = context.metrics;
+    const q = last.toLowerCase();
+
+    const pick = (...keys: string[]) =>
+      keys
+        .filter((k) => m[k] !== undefined)
+        .map((k) => `${k.replace(/_/g, " ")}: ${m[k]}`)
+        .join(" · ");
+
+    let focus: string;
+    if (/close|conversion|win/.test(q)) {
+      focus = pick("close_rate", "avg_deal_size", "no_show_rate");
+    } else if (/ad|spend|roas|campaign|cost/.test(q)) {
+      focus = pick("ad_spend", "roas", "cost_per_call");
+    } else if (/cash|revenue|money|goal/.test(q)) {
+      focus = pick("revenue", "cash_collected");
+    } else {
+      focus = pick("revenue", "close_rate", "roas");
+    }
+
+    return [
+      `For ${context.clientName}, here's what the current numbers say — ${focus || "no metrics available yet"}.`,
+      "Based on that, two things I'd prioritise: (1) tighten qualification on booked calls to lift close rate, and (2) shift budget toward the lowest cost-per-call campaigns.",
+      "Want me to break any of these down further?",
+    ].join(" ");
   }
 }

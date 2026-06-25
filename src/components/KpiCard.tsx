@@ -1,5 +1,6 @@
 import { formatMetric as fm } from "@/components/format-value";
 import { OverrideControl } from "@/components/OverrideControl";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { acceptSuggestion, dismissSuggestion } from "@/app/dashboard/ai-actions";
 import type { KpiCardVM } from "@/lib/data/master";
 
@@ -36,7 +37,7 @@ export function KpiCard({
       </div>
 
       <div className="mt-2 text-[26px] font-semibold leading-none tracking-tight">
-        {fm(card.effective, card.format, currency)}
+        <AnimatedNumber value={card.effective} format={card.format} currency={currency} />
       </div>
 
       {card.overridden && (

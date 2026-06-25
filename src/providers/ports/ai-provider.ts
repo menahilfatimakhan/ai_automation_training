@@ -33,7 +33,20 @@ export interface AiAdvice {
   suggestions: AiSuggestionDraft[];
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface AiProvider {
   readonly name: string;
   advise(context: AiContext): Promise<AiAdvice>;
+  /**
+   * Multi-turn advisory chat. The pre-computed `metrics` are authoritative
+   * context; the assistant explains and recommends but never invents figures.
+   */
+  chat(
+    context: { clientName: string; currency: string; metrics: Record<string, number | string> },
+    messages: ChatMessage[],
+  ): Promise<string>;
 }

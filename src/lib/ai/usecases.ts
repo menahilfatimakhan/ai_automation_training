@@ -26,6 +26,14 @@ async function metricsForClient(client: ClientInfo) {
   return { view, metrics };
 }
 
+/** Authoritative, pre-computed metric map for a client (used to ground the chat). */
+export async function clientMetricsMap(
+  client: ClientInfo,
+): Promise<Record<string, number | string>> {
+  const { metrics } = await metricsForClient(client);
+  return metrics;
+}
+
 /** Generate dashboard insights, persist numeric suggestions, notify the panel. */
 export async function generateDashboardInsights(
   client: ClientInfo,

@@ -6,7 +6,7 @@ import { computeMasterView } from "@/lib/data/master";
 import { loadNotifications } from "@/lib/data/notifications";
 import { KpiCard } from "@/components/KpiCard";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
-import { RevenueTrendChart } from "@/components/charts";
+import { DualAreaChart } from "@/components/charts";
 import { AiPanel } from "@/components/AiPanel";
 
 export default async function MasterDashboardPage({
@@ -57,9 +57,15 @@ export default async function MasterDashboardPage({
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="card p-4">
           <h2 className="mb-3 text-sm font-medium text-ink-soft">
-            Revenue trend (closed deals, MTD)
+            Revenue vs cash collected (MTD)
           </h2>
-          <RevenueTrendChart data={view.revenueTrend} />
+          <DualAreaChart
+            data={view.moneyTrend}
+            keys={[
+              { key: "revenue", label: "Revenue", color: "#3B82F6" },
+              { key: "cash", label: "Cash collected", color: "#60A5FA" },
+            ]}
+          />
         </div>
         <AiPanel
           clientId={active.id}

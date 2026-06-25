@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { navFor } from "@/lib/access";
+import { resolveClientScope } from "@/lib/data/client-scope";
 import { DashboardShell, type NavLink } from "@/components/DashboardShell";
+import { CoachWidget } from "@/components/CoachWidget";
 
 export default async function DashboardLayout({
   children,
@@ -27,9 +29,13 @@ export default async function DashboardLayout({
 
   const role = ctx.isAdmin ? "Admin" : ctx.memberships[0]?.role ?? "Member";
 
+  // Default client for the floating Coach (first the viewer can see).
+  const { active } = await resolveClientScope(ctx);
+
   return (
     <DashboardShell links={links} userLabel={`Signed in · ${role}`}>
       {children}
+      {active && <CoachWidget clientId={active.id} clientName={active.name} />}
     </DashboardShell>
   );
 }

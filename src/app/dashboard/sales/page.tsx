@@ -6,7 +6,7 @@ import { loadCalls } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
 import { monthStartIso, todayIso, formatMoney } from "@/lib/format";
 import { LogCallForm } from "@/components/LogCallForm";
-import { OutcomePie } from "@/components/charts";
+import { OutcomePie, Funnel, HBarChart } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { TagEditor } from "@/components/TagEditor";
 import { AiPanel } from "@/components/AiPanel";
@@ -51,6 +51,26 @@ export default async function SalesDashboardPage({
     value: outcomeCounts[k] ?? 0,
   }));
 
+  // Conversion funnel: calls booked → showed up → closed.
+  const noShows = outcomeCounts["no_show"] ?? 0;
+  const funnelSteps = [
+    { label: "Calls", value: mtdCalls.length },
+    { label: "Showed", value: mtdCalls.length - noShows },
+    { label: "Closed", value: outcomeCounts["closed"] ?? 0 },
+  ];
+
+  // Revenue by lead source (closed deals).
+  const revBySource = new Map<string, number>();
+  for (const c of mtdCalls) {
+    if (c.outcome === "closed") {
+      const k = c.leadSource ?? "unknown";
+      revBySource.set(k, (revBySource.get(k) ?? 0) + c.revenue);
+    }
+  }
+  const sourceData = [...revBySource.entries()]
+    .map(([label, value]) => ({ label, value: Math.round(value) }))
+    .sort((a, b) => b.value - a.value);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -82,6 +102,21 @@ export default async function SalesDashboardPage({
             <OutcomePie data={pieData} />
           </section>
         </div>
+      </div>
+
+      <div className={`grid gap-6 lg:grid-cols-2 ${gated ? "pointer-events-none select-none blur-sm" : ""}`}>
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">
+            Conversion funnel (MTD)
+          </h2>
+          <Funnel steps={funnelSteps} />
+        </section>
+        <section className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">
+            Revenue by lead source ({active.reportingCurrency})
+          </h2>
+          <HBarChart data={sourceData} />
+        </section>
       </div>
 
       <section

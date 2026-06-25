@@ -8,7 +8,7 @@ import { AiPanel } from "@/components/AiPanel";
 import { computeSetterKpis } from "@/lib/kpi/engine";
 import { daysAgoIso, todayIso, formatPercent, formatNumber } from "@/lib/format";
 import { LogDayForm } from "@/components/LogDayForm";
-import { SeriesBarChart } from "@/components/charts";
+import { SeriesBarChart, Funnel } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 
 export default async function SetterDashboardPage({
@@ -76,6 +76,20 @@ export default async function SetterDashboardPage({
           <SeriesBarChart data={trend} dataKey="callsBooked" color="#3b82f6" />
         </section>
       </div>
+
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
+          Outreach conversion funnel (last 30 days)
+        </h2>
+        <Funnel
+          steps={[
+            { label: "Conversations", value: kpis.conversations },
+            { label: "Replies", value: kpis.replies },
+            { label: "Proposals", value: kpis.proposals },
+            { label: "Booked", value: kpis.callsBooked },
+          ]}
+        />
+      </section>
 
       <section className="card p-4">
         <h2 className="mb-3 text-sm font-medium text-ink-soft">
