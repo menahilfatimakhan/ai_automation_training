@@ -1,5 +1,4 @@
-import { config } from "dotenv";
-config({ path: ".env.local" });
+import "@/lib/load-env"; // must be first: loads .env.local before env validation
 
 import { inArray } from "drizzle-orm";
 import { getDb, schema } from "@/db";
