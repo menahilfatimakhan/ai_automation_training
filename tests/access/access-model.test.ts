@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canSeeAggregate,
   canViewClientData,
   canViewOwnedRow,
   landingRoute,
@@ -66,5 +67,24 @@ describe("access model (mirror of RLS for UI/routing)", () => {
     expect(navFor(admin).admin).toBe(true);
     expect(navFor(setterA).sales).toBe(false);
     expect(navFor(setterA).setter).toBe(true);
+  });
+
+  it("aggregate views (Master, Ads) are admin + client only", () => {
+    // Closers/setters cannot see the complete data.
+    expect(navFor(closerA).master).toBe(false);
+    expect(navFor(closerA).ads).toBe(false);
+    expect(navFor(setterA).master).toBe(false);
+    expect(navFor(setterA).ads).toBe(false);
+    // Admin and client can.
+    expect(navFor(admin).master).toBe(true);
+    expect(navFor(clientViewerA).master).toBe(true);
+    expect(navFor(clientViewerA).ads).toBe(true);
+  });
+
+  it("canSeeAggregate gates the complete view to admin + client", () => {
+    expect(canSeeAggregate(admin, A)).toBe(true);
+    expect(canSeeAggregate(clientViewerA, A)).toBe(true);
+    expect(canSeeAggregate(closerA, A)).toBe(false);
+    expect(canSeeAggregate(setterA, A)).toBe(false);
   });
 });

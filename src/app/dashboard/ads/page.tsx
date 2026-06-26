@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
-import { isClientViewer } from "@/lib/access";
+import { isClientViewer, canSeeAggregate, landingRoute } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { loadAdMetrics, loadCampaigns } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
@@ -35,6 +35,8 @@ export default async function AdsDashboardPage({
   const sp = await searchParams;
   const { active, options } = await resolveClientScope(ctx, sp.client);
   if (!active) return <p className="text-ink-soft">No client available.</p>;
+  // Complete ad data — closers/setters are sent to their own dashboard.
+  if (!canSeeAggregate(ctx, active.id)) redirect(landingRoute(ctx));
 
   const range: RangeKey = isRangeKey(sp.range) ? sp.range : "30d";
   const { from, to, label: rangeLabel } = resolveRange(range);

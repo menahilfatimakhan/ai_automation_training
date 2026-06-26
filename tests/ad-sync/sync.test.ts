@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MockAdProvider } from "@/providers/ad/mock-ad-provider";
 import { MetaAdProvider } from "@/providers/ad/meta-ad-provider";
 import { EnvSecretStore } from "@/providers/secret-store/env-secret-store";
@@ -167,11 +167,25 @@ describe("provider swap = injection only", () => {
     expect(metric).not.toHaveProperty("date_start");
   });
 
-  it("MetaAdProvider is a skeleton that throws until implemented", async () => {
+  it("MetaAdProvider calls the Graph API and surfaces errors", async () => {
     const meta = new MetaAdProvider();
-    await expect(
-      meta.listCampaigns({ clientId: "c", adAccountId: "act", accessToken: "t" }),
-    ).rejects.toThrow(/not implemented/);
+    const original = global.fetch;
+    global.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: { message: "Invalid OAuth access token" } }), {
+          status: 400,
+        }),
+    ) as typeof fetch;
+    try {
+      await expect(
+        meta.getDailyMetrics(
+          { clientId: "c", adAccountId: "act_1", accessToken: "bad" },
+          { from: "2026-06-01", to: "2026-06-07" },
+        ),
+      ).rejects.toThrow(/Meta Graph API error/);
+    } finally {
+      global.fetch = original;
+    }
   });
 
   it("EnvSecretStore resolves a ref from the environment", async () => {

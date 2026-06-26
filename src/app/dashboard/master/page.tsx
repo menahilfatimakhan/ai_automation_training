@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
-import { isClientViewer } from "@/lib/access";
+import { isClientViewer, canSeeAggregate, landingRoute } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { computeMasterView } from "@/lib/data/master";
 import { loadClosedDealsTrend } from "@/lib/data/dashboards";
@@ -24,6 +24,8 @@ export default async function MasterDashboardPage({
   if (!active) {
     return <p className="text-ink-soft">No clients available for your account.</p>;
   }
+  // Aggregate view — closers/setters are sent to their own dashboard.
+  if (!canSeeAggregate(ctx, active.id)) redirect(landingRoute(ctx));
 
   const [view, notifications, dealsTrend] = await Promise.all([
     computeMasterView(active.id, active.reportingCurrency),

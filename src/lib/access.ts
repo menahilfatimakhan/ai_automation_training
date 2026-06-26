@@ -55,6 +55,15 @@ export function canViewClientData(ctx: SessionContext, clientId: string): boolea
   return ctx.isAdmin || ctx.memberships.some((m) => m.clientId === clientId);
 }
 
+/**
+ * Can this user see the COMPLETE/aggregate data for a client (Master + Ads
+ * dashboards, client-wide spend)? Only admins and client-role viewers — closers
+ * and setters are restricted to their own operational view.
+ */
+export function canSeeAggregate(ctx: SessionContext, clientId: string): boolean {
+  return ctx.isAdmin || isClientViewer(ctx, clientId);
+}
+
 /** Landing route for a session, by precedence: admin → closer → setter → client. */
 export function landingRoute(ctx: SessionContext): string {
   if (ctx.isAdmin) return "/dashboard/master";
@@ -76,12 +85,12 @@ export function navFor(ctx: SessionContext): {
   admin: boolean;
 } {
   const roles = new Set(ctx.memberships.map((m) => m.role));
-  const anyMember = ctx.memberships.length > 0;
+  // Aggregate/complete views are admin + client only.
   return {
-    master: ctx.isAdmin || anyMember,
+    master: ctx.isAdmin || roles.has("client"),
     sales: ctx.isAdmin || roles.has("closer"),
     setter: ctx.isAdmin || roles.has("setter"),
-    ads: ctx.isAdmin || anyMember,
+    ads: ctx.isAdmin || roles.has("client"),
     callLogs: ctx.isAdmin || roles.has("closer") || roles.has("client"),
     leads: ctx.isAdmin || roles.has("closer") || roles.has("setter"),
     admin: ctx.isAdmin,
