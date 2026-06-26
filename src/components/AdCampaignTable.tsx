@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatMoney, formatNumber, formatPercent } from "@/lib/format";
+import { StatusBadge } from "@/components/badges";
 
 export interface CampaignAggregate {
   campaignId: string;
@@ -141,7 +142,7 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
             <tr key={r.campaignId} className="border-t border-line">
               {visibleCols.map((c) => (
                 <td key={c.key} className={`py-1.5 ${c.numeric ? "text-right tabular-nums" : ""}`}>
-                  {fmt(c.key, r)}
+                  {c.key === "status" ? <StatusBadge status={r.status} /> : fmt(c.key, r)}
                 </td>
               ))}
             </tr>

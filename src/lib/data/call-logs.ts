@@ -87,3 +87,35 @@ export async function loadCallLogs(
 
   return { rows, total: count ?? 0, page: filter.page, pageSize: filter.pageSize };
 }
+
+/**
+ * Outcome mix for the current date/search filter (ignores the outcome filter so
+ * the full breakdown is always visible). Powers the color-coded summary strip.
+ */
+export async function loadOutcomeMix(
+  clientId: string,
+  filter: Pick<CallLogFilter, "preset" | "search">,
+): Promise<Record<string, number>> {
+  const supabase = await createSupabaseServerClient();
+  const { from, to } = presetRange(filter.preset);
+
+  let query = supabase
+    .from("calls")
+    .select("outcome")
+    .eq("client_id", clientId)
+    .gte("date", from)
+    .lte("date", to)
+    .limit(5000);
+
+  if (filter.search) {
+    const s = filter.search.replace(/[%,]/g, "");
+    query = query.or(
+      `lead_source.ilike.%${s}%,objection_reason.ilike.%${s}%,notes.ilike.%${s}%`,
+    );
+  }
+
+  const { data } = await query;
+  const mix: Record<string, number> = { closed: 0, rescheduled: 0, lost: 0, no_show: 0 };
+  for (const r of data ?? []) mix[r.outcome] = (mix[r.outcome] ?? 0) + 1;
+  return mix;
+}

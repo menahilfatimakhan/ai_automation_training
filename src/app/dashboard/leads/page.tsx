@@ -31,6 +31,17 @@ export default async function LeadsPage({
   const memberName = (id: string | null) =>
     members.find((m) => m.userId === id)?.name ?? "Unassigned";
 
+  const statusMeta = [
+    { key: "new", label: "New", cls: "text-accent-sky" },
+    { key: "working", label: "Working", cls: "text-accent-amber" },
+    { key: "won", label: "Won", cls: "text-accent-green" },
+    { key: "lost", label: "Lost", cls: "text-accent-rose" },
+  ];
+  const statusCounts = leads.reduce<Record<string, number>>((acc, l) => {
+    acc[l.status] = (acc[l.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,6 +50,17 @@ export default async function LeadsPage({
           <p className="text-sm text-ink-soft">{active.name}</p>
         </div>
         <ClientSwitcher options={options} activeId={active.id} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {statusMeta.map((s) => (
+          <div key={s.key} className="card flex items-center gap-2 px-3 py-2">
+            <span className={`text-lg font-semibold ${s.cls}`}>
+              {statusCounts[s.key] ?? 0}
+            </span>
+            <span className="text-xs text-ink-soft">{s.label}</span>
+          </div>
+        ))}
       </div>
 
       <section className="card p-4">

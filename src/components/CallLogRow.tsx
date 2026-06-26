@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateCall, deleteCall } from "@/app/dashboard/call-logs/actions";
 import { TagEditor } from "@/components/TagEditor";
+import { OutcomeBadge, Money } from "@/components/badges";
 import { formatMoney } from "@/lib/format";
 import type { CallRow } from "@/lib/data/dashboards";
 
@@ -69,9 +70,13 @@ export function CallLogRow({ call, canEdit }: { call: CallRow; canEdit: boolean 
   return (
     <tr className="border-t border-line">
       <td className="py-1.5">{call.date}</td>
-      <td className="py-1.5">{OUTCOME_LABEL[call.outcome]}</td>
-      <td className="py-1.5 tabular-nums">{formatMoney(call.revenue, call.currency)}</td>
-      <td className="py-1.5 tabular-nums">{formatMoney(call.cashCollected, call.currency)}</td>
+      <td className="py-1.5"><OutcomeBadge outcome={call.outcome} /></td>
+      <td className="py-1.5 tabular-nums">
+        <Money amount={call.revenue} formatted={formatMoney(call.revenue, call.currency)} />
+      </td>
+      <td className="py-1.5 tabular-nums">
+        <Money amount={call.cashCollected} formatted={formatMoney(call.cashCollected, call.currency)} />
+      </td>
       <td className="py-1.5 text-ink-soft">{call.leadSource ?? "—"}</td>
       <td className="py-1.5">
         <TagEditor id={call.id} tags={call.tags} editable={canEdit} />

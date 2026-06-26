@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { setLeadTags, reassignLead } from "@/app/dashboard/leads/actions";
+import { LeadStatusBadge } from "@/components/badges";
 import type { ClientMember, LeadRow as Lead } from "@/lib/data/leads";
 
 export function LeadRow({
@@ -22,7 +23,7 @@ export function LeadRow({
       <td className="py-1.5">{lead.name}</td>
       <td className="py-1.5 text-ink-soft">{lead.contact ?? "—"}</td>
       <td className="py-1.5 text-ink-soft">{lead.source ?? "—"}</td>
-      <td className="py-1.5">{lead.status}</td>
+      <td className="py-1.5"><LeadStatusBadge status={lead.status} /></td>
       <td className="py-1.5">
         {editingTags ? (
           <form action={setLeadTags} onSubmit={() => setEditingTags(false)} className="flex items-center gap-1">

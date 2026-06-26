@@ -7,6 +7,7 @@ import {
   BarChart,
   Cell,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Pie,
   PieChart,
@@ -61,11 +62,42 @@ export function RevenueTrendChart({
 }
 
 const PIE_COLORS: Record<string, string> = {
-  closed: "#3B82F6",
-  rescheduled: "#60A5FA",
+  closed: "#34D399",
+  rescheduled: "#FBBF24",
   lost: "#FB7185",
   no_show: "#646E86",
 };
+
+/**
+ * Closed deals (bars, right axis) + revenue (line, left axis) over a window.
+ * The two-axis view shows deal volume and value together.
+ */
+export function DealsRevenueChart({
+  data,
+}: {
+  data: { date: string; deals: number; revenue: number }[];
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id="dealRev" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="date" tickFormatter={shortDate} tick={AXIS} tickLine={false} axisLine={false} minTickGap={24} />
+        <YAxis yAxisId="rev" tick={AXIS} tickLine={false} axisLine={false} width={48} />
+        <YAxis yAxisId="deals" orientation="right" tick={AXIS} tickLine={false} axisLine={false} width={32} allowDecimals={false} />
+        <Tooltip contentStyle={TOOLTIP} labelStyle={{ color: "#9AA3B8" }} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+        <Legend wrapperStyle={{ fontSize: 11, color: "#9AA3B8" }} />
+        <Bar yAxisId="deals" dataKey="deals" name="Deals closed" fill="#34D399" radius={[3, 3, 0, 0]} maxBarSize={10} opacity={0.8} />
+        <Area yAxisId="rev" type="monotone" dataKey="revenue" name="Revenue" stroke="#3B82F6" strokeWidth={2} fill="url(#dealRev)" />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
 
 export function OutcomePie({ data }: { data: { name: string; value: number }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);

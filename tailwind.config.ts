@@ -33,6 +33,7 @@ const config: Config = {
           violet: "#A78BFA",
           amber: "#FBBF24",
           rose: "#FB7185",
+          green: "#34D399",
         },
       },
       borderRadius: {

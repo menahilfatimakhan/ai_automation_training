@@ -3,10 +3,11 @@ import Link from "next/link";
 import { getSessionContext } from "@/lib/auth";
 import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
-import { loadCallLogs, type DatePreset } from "@/lib/data/call-logs";
+import { loadCallLogs, loadOutcomeMix, type DatePreset } from "@/lib/data/call-logs";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { CallLogFilters } from "@/components/CallLogFilters";
 import { CallLogRow } from "@/components/CallLogRow";
+import { OutcomeMixStrip } from "@/components/badges";
 
 const PAGE_SIZE = 20;
 
@@ -33,13 +34,10 @@ export default async function CallLogsPage({
   const search = sp.search ?? "";
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
 
-  const result = await loadCallLogs(active.id, {
-    preset,
-    outcome,
-    search,
-    page,
-    pageSize: PAGE_SIZE,
-  });
+  const [result, mix] = await Promise.all([
+    loadCallLogs(active.id, { preset, outcome, search, page, pageSize: PAGE_SIZE }),
+    loadOutcomeMix(active.id, { preset, search }),
+  ]);
 
   // Client-role viewers are read-only; closers/admin can edit/delete.
   const canEdit = !isClientViewer(ctx, active.id) || ctx.isAdmin;
@@ -79,6 +77,8 @@ export default async function CallLogsPage({
           <ClientSwitcher options={options} activeId={active.id} />
         </div>
       </div>
+
+      <OutcomeMixStrip mix={mix} />
 
       <CallLogFilters preset={preset} outcome={outcome} search={search} />
 

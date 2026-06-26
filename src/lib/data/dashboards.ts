@@ -59,6 +59,39 @@ export async function loadCalls(
   }));
 }
 
+/**
+ * Daily closed-deal count + closed revenue over a trailing window (e.g. 100
+ * days), oldest → newest. Powers the Master deals-vs-revenue trend.
+ */
+export async function loadClosedDealsTrend(
+  clientId: string,
+  fromIso: string,
+  toIso: string,
+): Promise<{ date: string; deals: number; revenue: number }[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("calls")
+    .select("date, revenue, outcome")
+    .eq("client_id", clientId)
+    .eq("outcome", "closed")
+    .gte("date", fromIso)
+    .lte("date", toIso)
+    .order("date", { ascending: true });
+
+  const byDate = new Map<string, { deals: number; revenue: number }>();
+  for (const c of data ?? []) {
+    const cur = byDate.get(c.date) ?? { deals: 0, revenue: 0 };
+    cur.deals += 1;
+    cur.revenue += Number(c.revenue);
+    byDate.set(c.date, cur);
+  }
+  return [...byDate.entries()].map(([date, v]) => ({
+    date,
+    deals: v.deals,
+    revenue: Math.round(v.revenue),
+  }));
+}
+
 export function toCallRecords(rows: CallRow[]): CallRecord[] {
   return rows.map((r) => ({
     outcome: r.outcome,

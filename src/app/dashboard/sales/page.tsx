@@ -12,6 +12,7 @@ import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { RangeSelector } from "@/components/RangeSelector";
 import { TagEditor } from "@/components/TagEditor";
 import { AiPanel } from "@/components/AiPanel";
+import { OutcomeBadge, Money } from "@/components/badges";
 
 const OUTCOME_LABEL: Record<string, string> = {
   closed: "Closed",
@@ -150,9 +151,13 @@ export default async function SalesDashboardPage({
             <tbody>
               {todaysCalls.map((c) => (
                 <tr key={c.id} className="border-t border-line">
-                  <td className="py-1.5">{OUTCOME_LABEL[c.outcome]}</td>
-                  <td className="py-1.5">{formatMoney(c.revenue, c.currency)}</td>
-                  <td className="py-1.5">{formatMoney(c.cashCollected, c.currency)}</td>
+                  <td className="py-1.5"><OutcomeBadge outcome={c.outcome} /></td>
+                  <td className="py-1.5">
+                    <Money amount={c.revenue} formatted={formatMoney(c.revenue, c.currency)} />
+                  </td>
+                  <td className="py-1.5">
+                    <Money amount={c.cashCollected} formatted={formatMoney(c.cashCollected, c.currency)} />
+                  </td>
                   <td className="py-1.5 text-ink-soft">{c.leadSource ?? "—"}</td>
                   <td className="py-1.5">
                     <TagEditor id={c.id} tags={c.tags} />

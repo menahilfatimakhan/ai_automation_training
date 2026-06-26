@@ -18,11 +18,19 @@ export function FollowUpItem({
   ownerLabel?: string;
 }) {
   const done = status === "done";
+  const overdue =
+    !done && dueDate !== null && dueDate < new Date().toISOString().slice(0, 10);
   return (
     <li className="flex items-center justify-between border-t border-line py-2 text-sm">
       <div>
         <span className={done ? "text-ink-faint line-through" : ""}>
-          {leadName ?? "Lead"} {dueDate && <span className="text-ink-faint">· due {dueDate}</span>}
+          {leadName ?? "Lead"}{" "}
+          {dueDate && (
+            <span className={overdue ? "font-medium text-accent-rose" : "text-ink-faint"}>
+              · due {dueDate}
+              {overdue ? " (overdue)" : ""}
+            </span>
+          )}
         </span>
         {notes && <div className="text-xs text-ink-faint">{notes}</div>}
         {ownerLabel && <div className="text-[11px] text-ink-faint">{ownerLabel}</div>}
