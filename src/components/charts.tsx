@@ -126,6 +126,26 @@ export function OutcomePie({ data }: { data: { name: string; value: number }[] }
   );
 }
 
+/** Tiny inline trend line for KPI cards — no axes, grid, or tooltip. */
+export function Sparkline({ data, color = "#3B82F6" }: { data: number[]; color?: string }) {
+  if (!data || data.length < 2) return <div className="h-11" />;
+  const chartData = data.map((v, i) => ({ i, v }));
+  const id = `spark-${color.replace("#", "")}`;
+  return (
+    <ResponsiveContainer width="100%" height={44}>
+      <AreaChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey="v" stroke={color} strokeWidth={2} fill={`url(#${id})`} dot={false} isAnimationActive={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
 /** Two-series area chart (e.g. revenue vs cash collected). */
 export function DualAreaChart({
   data,

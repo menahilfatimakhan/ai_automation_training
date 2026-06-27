@@ -138,7 +138,17 @@ export function DashboardShell({
 
         <nav className="flex flex-1 flex-col gap-1">{navItems}</nav>
 
-        <div className="mt-4 border-t border-line pt-4">
+        <div className="mb-4 rounded-xl border border-brand/20 bg-gradient-to-b from-brand-soft to-transparent p-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-brand">
+              <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
+            </svg>
+            New season energy
+          </div>
+          <p className="mt-1 text-[11px] text-ink-soft">Keep the numbers moving.</p>
+        </div>
+
+        <div className="mt-1 border-t border-line pt-4">
           <div className="truncate px-3 pb-2 text-xs text-ink-faint">{userLabel}</div>
           <form action={signOut}>
             <button className="btn-ghost w-full justify-start">Sign out</button>

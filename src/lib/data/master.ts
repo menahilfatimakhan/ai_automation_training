@@ -14,11 +14,13 @@ import {
 import { monthEndIso, monthStartIso, todayIso } from "@/lib/format";
 
 export type MetricFormat = "money" | "percent" | "number" | "multiple";
+export type Tone = "green" | "violet" | "amber" | "sky" | "rose" | "blue";
 
 export interface KpiCardVM {
   key: MetricKey;
   label: string;
   format: MetricFormat;
+  tone: Tone;
   currency?: string;
   computed: number;
   effective: number;
@@ -26,6 +28,8 @@ export interface KpiCardVM {
   source: "computed" | "manual" | "ai_suggestion";
   goal?: { target: number; progress: number };
   suggestion?: { id: string; value: number | null; rationale: string };
+  /** Daily trend for an inline sparkline (hero cards only). */
+  spark?: number[];
 }
 
 export interface MasterView {
@@ -38,17 +42,24 @@ export interface MasterView {
   moneyTrend: { date: string; revenue: number; cash: number }[];
 }
 
-const CARD_DEFS: { key: MetricKey; label: string; format: MetricFormat }[] = [
-  { key: METRIC_KEYS.revenue, label: "Revenue (MTD)", format: "money" },
-  { key: METRIC_KEYS.cashCollected, label: "Cash Collected", format: "money" },
-  { key: METRIC_KEYS.totalCalls, label: "Calls", format: "number" },
-  { key: METRIC_KEYS.closeRate, label: "Close Rate", format: "percent" },
-  { key: METRIC_KEYS.avgDealSize, label: "Avg Deal Size", format: "money" },
-  { key: METRIC_KEYS.noShowRate, label: "No-Show Rate", format: "percent" },
-  { key: METRIC_KEYS.adSpend, label: "Ad Spend", format: "money" },
-  { key: METRIC_KEYS.roas, label: "ROAS", format: "multiple" },
-  { key: METRIC_KEYS.costPerCall, label: "Cost / Call", format: "money" },
+const CARD_DEFS: { key: MetricKey; label: string; format: MetricFormat; tone: Tone }[] = [
+  { key: METRIC_KEYS.revenue, label: "Revenue (MTD)", format: "money", tone: "green" },
+  { key: METRIC_KEYS.closeRate, label: "Close Rate", format: "percent", tone: "green" },
+  { key: METRIC_KEYS.cashCollected, label: "Cash Collected", format: "money", tone: "violet" },
+  { key: METRIC_KEYS.totalCalls, label: "Calls Booked", format: "number", tone: "amber" },
+  { key: METRIC_KEYS.avgDealSize, label: "Avg Deal Size", format: "money", tone: "sky" },
+  { key: METRIC_KEYS.noShowRate, label: "No-Shows", format: "percent", tone: "rose" },
+  { key: METRIC_KEYS.roas, label: "ROAS", format: "multiple", tone: "green" },
+  { key: METRIC_KEYS.adSpend, label: "Ad Spend", format: "money", tone: "amber" },
+  { key: METRIC_KEYS.costPerCall, label: "Cost / Call", format: "money", tone: "rose" },
 ];
+
+/** Metrics that get an inline sparkline (the hero cards). */
+const SPARK_KEYS = new Set<MetricKey>([
+  METRIC_KEYS.revenue,
+  METRIC_KEYS.closeRate,
+  METRIC_KEYS.cashCollected,
+]);
 
 /**
  * Assembles the master dashboard view: computed KPIs (always recalculated),
@@ -104,6 +115,30 @@ export async function computeMasterView(
     }
   }
 
+  // Daily series (oldest → newest) for trends + KPI sparklines.
+  const revByDate = new Map<string, number>();
+  const cashByDate = new Map<string, number>();
+  const dayCounts = new Map<string, { closed: number; total: number; noShow: number }>();
+  for (const c of callRows) {
+    if (c.outcome === "closed") revByDate.set(c.date, (revByDate.get(c.date) ?? 0) + c.revenue);
+    if (c.cashCollected) cashByDate.set(c.date, (cashByDate.get(c.date) ?? 0) + c.cashCollected);
+    const dc = dayCounts.get(c.date) ?? { closed: 0, total: 0, noShow: 0 };
+    dc.total += 1;
+    if (c.outcome === "closed") dc.closed += 1;
+    if (c.outcome === "no_show") dc.noShow += 1;
+    dayCounts.set(c.date, dc);
+  }
+  const dates = [...new Set([...revByDate.keys(), ...cashByDate.keys(), ...dayCounts.keys()])].sort();
+  const sparkByKey: Partial<Record<MetricKey, number[]>> = {
+    [METRIC_KEYS.revenue]: dates.map((d) => Math.round(revByDate.get(d) ?? 0)),
+    [METRIC_KEYS.cashCollected]: dates.map((d) => Math.round(cashByDate.get(d) ?? 0)),
+    [METRIC_KEYS.closeRate]: dates.map((d) => {
+      const dc = dayCounts.get(d);
+      const taken = dc ? dc.total - dc.noShow : 0;
+      return taken > 0 ? Math.round(((dc!.closed / taken) * 100)) : 0;
+    }),
+  };
+
   const cards: KpiCardVM[] = CARD_DEFS.map((def) => {
     const computed = computedByKey[def.key];
     const resolved = resolveValue(computed, overrides.get(def.key));
@@ -111,11 +146,13 @@ export async function computeMasterView(
       key: def.key,
       label: def.label,
       format: def.format,
+      tone: def.tone,
       currency: def.format === "money" ? currency : undefined,
       computed,
       effective: resolved.effective,
       overridden: resolved.overridden,
       source: resolved.source,
+      spark: SPARK_KEYS.has(def.key) ? sparkByKey[def.key] : undefined,
     };
 
     if (goal && def.key === METRIC_KEYS.revenue) {
@@ -142,18 +179,6 @@ export async function computeMasterView(
     return card;
   });
 
-  // Daily revenue (closed) + cash-collected (all calls), oldest → newest.
-  const revByDate = new Map<string, number>();
-  const cashByDate = new Map<string, number>();
-  for (const c of callRows) {
-    if (c.outcome === "closed") {
-      revByDate.set(c.date, (revByDate.get(c.date) ?? 0) + c.revenue);
-    }
-    if (c.cashCollected) {
-      cashByDate.set(c.date, (cashByDate.get(c.date) ?? 0) + c.cashCollected);
-    }
-  }
-  const dates = [...new Set([...revByDate.keys(), ...cashByDate.keys()])].sort();
   const revenueTrend = dates.map((date) => ({ date, revenue: Math.round(revByDate.get(date) ?? 0) }));
   const moneyTrend = dates.map((date) => ({
     date,

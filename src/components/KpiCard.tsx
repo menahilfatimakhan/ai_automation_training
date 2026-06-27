@@ -2,8 +2,26 @@ import { formatMetric as fm } from "@/components/format-value";
 import { OverrideControl } from "@/components/OverrideControl";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { ActionForm } from "@/components/ActionForm";
+import { Sparkline } from "@/components/charts";
 import { acceptSuggestion, dismissSuggestion } from "@/app/dashboard/ai-actions";
-import type { KpiCardVM } from "@/lib/data/master";
+import type { KpiCardVM, Tone } from "@/lib/data/master";
+
+const TONE_DOT: Record<Tone, string> = {
+  green: "bg-accent-green",
+  violet: "bg-accent-violet",
+  amber: "bg-accent-amber",
+  sky: "bg-accent-sky",
+  rose: "bg-accent-rose",
+  blue: "bg-brand",
+};
+const TONE_HEX: Record<Tone, string> = {
+  green: "#34D399",
+  violet: "#A78BFA",
+  amber: "#FBBF24",
+  sky: "#38BDF8",
+  rose: "#FB7185",
+  blue: "#3B82F6",
+};
 
 /**
  * A KPI card showing: the effective value (override wins), the computed value
@@ -29,7 +47,10 @@ export function KpiCard({
   return (
     <div className="card group p-5 transition-colors hover:border-line-strong">
       <div className="flex items-start justify-between">
-        <span className="text-[13px] font-medium text-ink-soft">{card.label}</span>
+        <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-soft">
+          <span className={`h-1.5 w-1.5 rounded-full ${TONE_DOT[card.tone]}`} />
+          {card.label}
+        </span>
         {card.overridden && (
           <span className="badge bg-accent-amber/15 text-accent-amber">
             {card.source === "ai_suggestion" ? "AI" : "Manual"}
@@ -40,6 +61,12 @@ export function KpiCard({
       <div className="mt-2 text-[26px] font-semibold leading-none tracking-tight">
         <AnimatedNumber value={card.effective} format={card.format} currency={currency} />
       </div>
+
+      {card.spark && (
+        <div className="mt-3 -mb-1">
+          <Sparkline data={card.spark} color={TONE_HEX[card.tone]} />
+        </div>
+      )}
 
       {card.overridden && (
         <div className="mt-1 text-xs text-ink-faint">

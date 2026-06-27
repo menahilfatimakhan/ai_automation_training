@@ -47,17 +47,36 @@ export default async function MasterDashboardPage({
         <ClientSwitcher options={options} activeId={active.id} />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {view.cards.map((card) => (
-          <KpiCard
-            key={card.key}
-            card={card}
-            clientId={active.id}
-            periodStart={view.periodStart}
-            periodEnd={view.periodEnd}
-            readOnly={readOnly}
-          />
-        ))}
+      {/* Hero KPIs with sparklines */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {view.cards
+          .filter((c) => c.spark)
+          .map((card) => (
+            <KpiCard
+              key={card.key}
+              card={card}
+              clientId={active.id}
+              periodStart={view.periodStart}
+              periodEnd={view.periodEnd}
+              readOnly={readOnly}
+            />
+          ))}
+      </div>
+
+      {/* Compact secondary KPIs */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+        {view.cards
+          .filter((c) => !c.spark)
+          .map((card) => (
+            <KpiCard
+              key={card.key}
+              card={card}
+              clientId={active.id}
+              periodStart={view.periodStart}
+              periodEnd={view.periodEnd}
+              readOnly={readOnly}
+            />
+          ))}
       </div>
 
       <div className="card p-4">
