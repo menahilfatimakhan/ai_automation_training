@@ -18,7 +18,7 @@ export class LiveFxProvider implements FxProvider {
   readonly name = "live";
   private cache = new Map<string, CacheEntry>();
   private fallback = new MockFxProvider();
-  private base = process.env.FX_API_BASE ?? "https://api.frankfurter.app";
+  private base = process.env.FX_API_BASE ?? "https://api.frankfurter.dev";
 
   async getRate(from: CurrencyCode, to: CurrencyCode): Promise<number> {
     const f = from.toUpperCase();
