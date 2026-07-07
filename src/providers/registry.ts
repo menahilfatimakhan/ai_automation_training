@@ -8,6 +8,7 @@ import type { AiProvider } from "@/providers/ports/ai-provider";
 import { MockAdProvider } from "@/providers/ad/mock-ad-provider";
 import { MetaAdProvider } from "@/providers/ad/meta-ad-provider";
 import { MockFxProvider } from "@/providers/fx/mock-fx-provider";
+import { LiveFxProvider } from "@/providers/fx/live-fx-provider";
 import { ConsoleNotifier } from "@/providers/notifier/console-notifier";
 import { DbNotifier } from "@/providers/notifier/db-notifier";
 import { EnvSecretStore } from "@/providers/secret-store/env-secret-store";
@@ -51,6 +52,10 @@ function selectAdProvider(kind: "mock" | "meta"): AdProvider {
   }
 }
 
+function selectFxProvider(kind: "mock" | "live"): FxProvider {
+  return kind === "live" ? new LiveFxProvider() : new MockFxProvider();
+}
+
 function selectNotifier(kind: "console" | "db"): Notifier {
   return kind === "db" ? new DbNotifier() : new ConsoleNotifier();
 }
@@ -73,7 +78,7 @@ export function getProviders(overrides: ProviderOverrides = {}): Providers {
   const env = serverEnv();
   return {
     ad: overrides.ad ?? selectAdProvider(env.AD_PROVIDER),
-    fx: overrides.fx ?? new MockFxProvider(),
+    fx: overrides.fx ?? selectFxProvider(env.FX_PROVIDER),
     notifier: overrides.notifier ?? selectNotifier(env.NOTIFIER),
     secrets: overrides.secrets ?? new EnvSecretStore(),
     ai: overrides.ai ?? selectAiProvider(env.AI_PROVIDER, env.ANTHROPIC_API_KEY),

@@ -21,7 +21,7 @@ const serverSchema = z.object({
   DATABASE_URL: z.string().min(1),
   ANTHROPIC_API_KEY: z.string().min(1),
   AD_PROVIDER: z.enum(["mock", "meta"]).default("mock"),
-  FX_PROVIDER: z.enum(["mock"]).default("mock"),
+  FX_PROVIDER: z.enum(["mock", "live"]).default("mock"),
   NOTIFIER: z.enum(["console", "db"]).default("db"),
   AI_PROVIDER: z.enum(["mock", "anthropic"]).default("mock"),
 });

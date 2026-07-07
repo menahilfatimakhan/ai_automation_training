@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "innovatrium-cms", "runtimeExecutable": "node", "runtimeArgs": ["E:/Projects/Innovatrium_Website/server/server.js"], "port": 3900 }
+  ]
+}
