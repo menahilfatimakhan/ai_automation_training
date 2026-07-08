@@ -7,6 +7,7 @@ import {
   assignMembership,
   connectAdAccount,
   deleteAlertThreshold,
+  inviteUser,
   removeMembership,
   setAlertThreshold,
   setMonthlyGoal,
@@ -96,6 +97,30 @@ export default async function AdminPage() {
             );
           })}
         </div>
+      </section>
+
+      {/* ── Invite user ──────────────────────────────────────────────── */}
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-medium text-ink-soft">Invite a user</h2>
+        <p className="mb-3 text-xs text-ink-faint">
+          Creates the account and emails an invite link via the EmailProvider
+          port (console-logged until <code>EMAIL_PROVIDER=resend</code> is set).
+        </p>
+        <ActionForm action={inviteUser} success="Invite sent" className="flex flex-wrap items-end gap-3">
+          <label className="text-xs text-ink-soft">
+            Email
+            <input name="email" type="email" required className={`mt-1 block w-56 ${inputCls}`} />
+          </label>
+          <label className="text-xs text-ink-soft">
+            Full name
+            <input name="fullName" className={`mt-1 block w-44 ${inputCls}`} />
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+            <input type="checkbox" name="isAdmin" />
+            Agency admin
+          </label>
+          <button className={btnCls}>Send invite</button>
+        </ActionForm>
       </section>
 
       {/* ── Memberships ──────────────────────────────────────────────── */}

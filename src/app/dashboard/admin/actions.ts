@@ -2,13 +2,59 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { getSessionContext } from "@/lib/auth";
+import { getProviders } from "@/providers/registry";
 
 async function requireAdmin() {
   const ctx = await getSessionContext();
   if (!ctx) throw new Error("Not authenticated");
   if (!ctx.isAdmin) throw new Error("Admin only");
   return ctx;
+}
+
+/**
+ * Invite a new user: creates the Supabase auth account (unconfirmed, no
+ * password set), mirrors it into public.users, and emails an invite link via
+ * our EmailProvider port (never Supabase's own SMTP).
+ */
+export async function inviteUser(formData: FormData) {
+  await requireAdmin();
+  const email = String(formData.get("email") ?? "").trim();
+  const fullName = String(formData.get("fullName") ?? "").trim() || null;
+  const isAdminFlag = formData.get("isAdmin") === "on";
+  if (!email) throw new Error("Email is required");
+
+  const service = createSupabaseServiceClient();
+  const { data, error } = await service.auth.admin.generateLink({
+    type: "invite",
+    email,
+  });
+  if (error) throw new Error(error.message);
+
+  const userId = data.user?.id;
+  if (userId) {
+    const db = await createSupabaseServerClient();
+    await db.from("users").upsert(
+      { id: userId, email, full_name: fullName, is_admin: isAdminFlag },
+      { onConflict: "id" },
+    );
+  }
+
+  if (data.properties?.action_link) {
+    try {
+      const { email: emailProvider } = getProviders();
+      await emailProvider.send({
+        to: email,
+        subject: "You're invited to NEW SZN",
+        text: `You've been invited to the NEW SZN agency dashboard. Set up your account:\n\n${data.properties.action_link}`,
+      });
+    } catch (err) {
+      console.error("invite email failed:", err);
+    }
+  }
+
+  revalidatePath("/dashboard/admin");
 }
 
 /** Set the monthly revenue + call goals for a client (upsert on client+month). */

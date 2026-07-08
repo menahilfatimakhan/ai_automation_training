@@ -22,8 +22,12 @@ const serverSchema = z.object({
   ANTHROPIC_API_KEY: z.string().min(1),
   AD_PROVIDER: z.enum(["mock", "meta"]).default("mock"),
   FX_PROVIDER: z.enum(["mock", "live"]).default("mock"),
-  NOTIFIER: z.enum(["console", "db"]).default("db"),
+  NOTIFIER: z.enum(["console", "db", "slack"]).default("db"),
   AI_PROVIDER: z.enum(["mock", "anthropic"]).default("mock"),
+  SLACK_BOT_TOKEN: z.string().optional().default(""),
+  EMAIL_PROVIDER: z.enum(["console", "resend"]).default("console"),
+  RESEND_API_KEY: z.string().optional().default(""),
+  EMAIL_FROM: z.string().optional().default("NEW SZN <onboarding@resend.dev>"),
 });
 
 export const clientEnv = clientSchema.parse({
@@ -46,6 +50,10 @@ export function serverEnv() {
     FX_PROVIDER: process.env.FX_PROVIDER,
     NOTIFIER: process.env.NOTIFIER,
     AI_PROVIDER: process.env.AI_PROVIDER,
+    SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
+    EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
   });
   return _serverEnv;
 }

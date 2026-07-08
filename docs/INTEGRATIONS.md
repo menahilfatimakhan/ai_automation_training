@@ -1,11 +1,11 @@
 # Integrations — going live with real providers
 
 The app talks to external services only through **ports** (provider interfaces)
-selected at the composition root (`src/providers/registry.ts`). Meta ads and FX
-rates already run real implementations by default (see below); Notifier/
-SecretStore still run mocks. Switching any remaining port to a real provider is
-a short checklist, not a refactor: `syncAdData`, the normalization layer, the
-DB, and the entire UI stay unchanged.
+selected at the composition root (`src/providers/registry.ts`). Meta ads, FX
+rates, Slack, and email all have real implementations now (see below);
+SecretStore still runs env-backed only. Switching any remaining port to a
+different real provider is a short checklist, not a refactor: `syncAdData`,
+the normalization layer, the DB, and the entire UI stay unchanged.
 
 ## Meta (Facebook) Ads — `AD_PROVIDER=meta`
 
@@ -55,9 +55,40 @@ KPI engine is unchanged either way.
 
 ## Notifications — `NOTIFIER`
 
-`ConsoleNotifier` writes to the console + an in-app inbox. To deliver via Slack
-or email, implement a `Notifier` and select it in the registry. AI panels and
-endpoints call `notifier.notify(...)` regardless — no UI changes.
+Three `Notifier` implementations exist: `ConsoleNotifier` (console + in-app
+inbox), `DbNotifier` (durable in-app only, the `.env.example` default), and
+`SlackNotifier` (`src/providers/notifier/slack-notifier.ts`, **implemented** —
+real `chat.postMessage` calls). `SlackNotifier` always writes to the in-app
+table first (composes `DbNotifier`), then best-effort posts to Slack — a
+missing channel, disabled toggle, or Slack API failure never blocks the
+in-app notification.
+
+### Going live
+1. Create a Slack app at api.slack.com/apps, add the **`chat:write`** bot
+   scope, install it to your workspace, copy the **Bot User OAuth Token**
+   (`xoxb-...`).
+2. `SLACK_BOT_TOKEN=xoxb-...` in `.env.local`, `NOTIFIER=slack`.
+3. Invite the bot to the channel you want each client's messages in, then set
+   that channel's ID and toggle message types per client in
+   **Admin → Slack & notification settings** (writes `client_settings`).
+
+No dashboard, KPI, or schema changes — every existing `notifier.notify(...)`
+call site is unchanged; this only swaps which channel actually delivers.
+
+## Email — `EMAIL_PROVIDER`
+
+Account invites and password-reset links only (never KPI/report messages —
+those stay on the Notifier/Slack port). `ConsoleEmailProvider` logs to the
+console (default); `ResendEmailProvider` (`src/providers/email/resend-email-provider.ts`)
+is **implemented** — a plain `fetch` call to the Resend HTTP API, no SDK
+dependency (same pattern as `MetaAdProvider`/`LiveFxProvider`).
+
+### Going live
+1. Create a Resend account, verify a sending domain (or use their shared
+   `onboarding@resend.dev` for testing), copy an API key.
+2. `EMAIL_PROVIDER=resend`, `RESEND_API_KEY=re_...`, `EMAIL_FROM="Name <you@yourdomain.com>"`.
+3. Admin → "Invite a user" and the login page's "Forgot password?" both
+   already call `getProviders().email.send(...)` — no other code changes.
 
 ## Secrets — `SecretStore`
 

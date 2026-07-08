@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { signIn, type AuthState } from "@/app/auth/actions";
+import { signIn, requestPasswordReset, type AuthState } from "@/app/auth/actions";
 
 const initial: AuthState = {};
 
@@ -15,8 +15,10 @@ const DEMO_ACCOUNTS: { role: string; email: string; note: string }[] = [
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(signIn, initial);
+  const [resetState, resetAction, resetPending] = useActionState(requestPasswordReset, initial);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showReset, setShowReset] = useState(false);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-10">
@@ -81,7 +83,37 @@ export default function LoginPage() {
             <button type="submit" disabled={pending} className="btn-primary w-full">
               {pending ? "Signing in…" : "Sign in"}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setShowReset((v) => !v)}
+              className="w-full text-center text-xs text-ink-faint hover:text-ink"
+            >
+              Forgot password?
+            </button>
           </form>
+
+          {showReset && (
+            <form action={resetAction} className="mt-4 space-y-2 border-t border-line pt-4">
+              <label htmlFor="reset-email" className="mb-1 block text-xs text-ink-soft">
+                Enter your email and we&apos;ll send a reset link
+              </label>
+              <input
+                id="reset-email"
+                name="email"
+                type="email"
+                required
+                className="input"
+                placeholder="you@agency.com"
+              />
+              {resetState.message && (
+                <p className="text-xs text-accent-green">{resetState.message}</p>
+              )}
+              <button type="submit" disabled={resetPending} className="btn-ghost w-full">
+                {resetPending ? "Sending…" : "Send reset link"}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Demo quick-login — click a role to fill the form */}
