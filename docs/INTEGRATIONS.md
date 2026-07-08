@@ -1,9 +1,11 @@
 # Integrations — going live with real providers
 
 The app talks to external services only through **ports** (provider interfaces)
-selected at the composition root (`src/providers/registry.ts`). Today every port
-runs a mock. Switching to a real provider is a short checklist, not a refactor:
-`syncAdData`, the normalization layer, the DB, and the entire UI stay unchanged.
+selected at the composition root (`src/providers/registry.ts`). Meta ads and FX
+rates already run real implementations by default (see below); Notifier/
+SecretStore still run mocks. Switching any remaining port to a real provider is
+a short checklist, not a refactor: `syncAdData`, the normalization layer, the
+DB, and the entire UI stay unchanged.
 
 ## Meta (Facebook) Ads — `AD_PROVIDER=meta`
 
@@ -43,9 +45,13 @@ No dashboard, KPI, or schema changes — only env + the `ad_connections` row.
 
 ## FX rates — `FX_PROVIDER`
 
-`MockFxProvider` uses static USD-based rates. To use a live feed, implement a
-new `FxProvider` (e.g. an ECB/openexchange adapter) and select it in the
-registry. The KPI engine is unchanged.
+`LiveFxProvider` (`src/providers/fx/live-fx-provider.ts`) is **implemented and
+the `.env.example` default** (`FX_PROVIDER=live`) — it calls the free
+Frankfurter/ECB API (`https://api.frankfurter.dev`, no key required), caches
+each rate for 12 hours, and falls back to `MockFxProvider`'s static rates if
+the live call fails, so an outage never breaks KPI math. `MockFxProvider`
+remains available via `FX_PROVIDER=mock` for hermetic tests/offline dev. The
+KPI engine is unchanged either way.
 
 ## Notifications — `NOTIFIER`
 

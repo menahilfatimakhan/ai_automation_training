@@ -22,6 +22,16 @@ const TONE_HEX: Record<Tone, string> = {
   rose: "#FB7185",
   blue: "#3B82F6",
 };
+const GOAL_TONE_BAR: Record<"green" | "amber" | "red", string> = {
+  green: "bg-accent-green",
+  amber: "bg-accent-amber",
+  red: "bg-accent-rose",
+};
+const GOAL_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
+  green: "text-accent-green",
+  amber: "text-accent-amber",
+  red: "text-accent-rose",
+};
 
 /**
  * A KPI card showing: the effective value (override wins), the computed value
@@ -58,8 +68,17 @@ export function KpiCard({
         )}
       </div>
 
-      <div className="mt-2 text-[26px] font-semibold leading-none tracking-tight">
+      <div className="mt-2 flex items-baseline gap-2 text-[26px] font-semibold leading-none tracking-tight">
         <AnimatedNumber value={card.effective} format={card.format} currency={currency} />
+        {card.trend && card.trend.direction !== "flat" && (
+          <span
+            className={`text-xs font-medium ${
+              card.trend.direction === "up" ? "text-accent-green" : "text-accent-rose"
+            }`}
+          >
+            {card.trend.direction === "up" ? "↑" : "↓"} {card.trend.pct.toFixed(1)}%
+          </span>
+        )}
       </div>
 
       {card.spark && (
@@ -78,13 +97,11 @@ export function KpiCard({
         <div className="mt-4">
           <div className="flex justify-between text-xs text-ink-faint">
             <span>Goal {fm(card.goal.target, card.format, currency)}</span>
-            <span className={progress >= 100 ? "text-brand" : "text-ink-soft"}>
-              {progress}%
-            </span>
+            <span className={GOAL_TONE_TEXT[card.goal.tone]}>{progress}%</span>
           </div>
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
             <div
-              className="h-full rounded-full bg-brand transition-[width]"
+              className={`h-full rounded-full transition-[width] ${GOAL_TONE_BAR[card.goal.tone]}`}
               style={{ width: `${progress}%` }}
             />
           </div>

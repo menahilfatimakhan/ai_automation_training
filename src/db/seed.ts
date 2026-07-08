@@ -183,9 +183,23 @@ async function main() {
     .where(inArray(schema.adConnections.clientId, clientIds));
 
   const adminId = userIdByEmail.get(ADMIN.email)!;
-  const OUTCOMES = ["closed", "rescheduled", "lost", "no_show"] as const;
+  // Weighted toward the client's real-world mix: mostly closed/showed-not-closed,
+  // a modest no-show rate, few reschedules.
+  const OUTCOMES = [
+    "paid_in_full",
+    "paid_in_full",
+    "split_pay",
+    "split_pay",
+    "offer_declined",
+    "offer_declined",
+    "not_a_fit",
+    "deposit_only",
+    "no_show",
+    "cancelled",
+    "rescheduled",
+  ] as const;
   const SOURCES = ["paid_ads", "referral", "organic", "outbound"];
-  const OBJECTIONS = ["price", "timing", "authority", "need", "trust"];
+  const OBJECTIONS = ["think_about_it", "money", "time", "partner", "fear", "value"] as const;
 
   for (const c of CLIENTS) {
     const closerId = closerFor(c.id);
@@ -223,19 +237,30 @@ async function main() {
       for (let i = 0; i < callCount; i++) {
         const r = mulberry32(hash(`${c.id}:${date}:${i}`));
         const outcome = OUTCOMES[Math.floor(r() * OUTCOMES.length)];
-        const isClosed = outcome === "closed";
+        const isClosed = outcome === "paid_in_full" || outcome === "split_pay";
         const revenue = isClosed ? Math.round((1500 + r() * 6000) * 100) / 100 : 0;
-        const cash = isClosed ? Math.round(revenue * (0.4 + r() * 0.6) * 100) / 100 : 0;
+        const cash =
+          outcome === "paid_in_full"
+            ? revenue
+            : outcome === "split_pay"
+              ? Math.round(revenue * (0.2 + r() * 0.3) * 100) / 100
+              : 0;
+        const isDeclineOutcome = outcome === "offer_declined" || outcome === "not_a_fit";
         calls.push({
           clientId: c.id,
           closerUserId: closerId,
+          bookedBySetterId: setterId,
           date,
           outcome,
           revenue: String(revenue),
           cashCollected: String(cash),
           currency: c.currency,
           leadSource: SOURCES[Math.floor(r() * SOURCES.length)],
-          objectionReason: outcome === "lost" ? OBJECTIONS[Math.floor(r() * OBJECTIONS.length)] : null,
+          objectionType: isDeclineOutcome ? OBJECTIONS[Math.floor(r() * OBJECTIONS.length)] : null,
+          objectionNotes: null,
+          contactName: null,
+          contactPhone: null,
+          contactEmail: null,
           notes: null,
           tags: r() > 0.7 ? ["hot"] : [],
         });

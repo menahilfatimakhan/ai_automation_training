@@ -64,7 +64,7 @@ export function RevenueTrendChart({
 const PIE_COLORS: Record<string, string> = {
   closed: "#34D399",
   rescheduled: "#FBBF24",
-  lost: "#FB7185",
+  showed_not_closed: "#FB7185",
   no_show: "#646E86",
 };
 

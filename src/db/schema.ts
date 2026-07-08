@@ -33,11 +33,28 @@ export const membershipRole = pgEnum("membership_role", [
   "setter",
   "client",
 ]);
+/**
+ * The 8 literal outcomes from the client's KPI spec (Metrics/KPI_Calculations.md),
+ * grouped into 4 buckets by `bucketOf()` in src/domain/metrics.ts — see that
+ * function for the canonical bucket mapping used by every KPI formula.
+ */
 export const callOutcome = pgEnum("call_outcome", [
-  "closed",
-  "rescheduled",
-  "lost",
+  "paid_in_full",
+  "split_pay",
+  "offer_declined",
+  "not_a_fit",
+  "deposit_only",
   "no_show",
+  "cancelled",
+  "rescheduled",
+]);
+export const objectionType = pgEnum("objection_type", [
+  "think_about_it",
+  "money",
+  "time",
+  "partner",
+  "fear",
+  "value",
 ]);
 export const campaignStatus = pgEnum("campaign_status", [
   "active",
@@ -122,13 +139,23 @@ export const calls = pgTable("calls", {
   closerUserId: uuid("closer_user_id").references(() => users.id, {
     onDelete: "set null",
   }),
+  /** The setter who booked this call, for the Setter Attribution Panel. */
+  bookedBySetterId: uuid("booked_by_setter_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   date: date("date").notNull(),
   outcome: callOutcome("outcome").notNull(),
   revenue: money("revenue").notNull().default("0"),
   cashCollected: money("cash_collected").notNull().default("0"),
   currency: text("currency").notNull().default("USD"),
   leadSource: text("lead_source"),
-  objectionReason: text("objection_reason"),
+  /** Controlled-vocabulary objection category (the 6 client counters). */
+  objectionType: objectionType("objection_type"),
+  /** Free-text objection detail — kept separate from the enum above. */
+  objectionNotes: text("objection_notes"),
+  contactName: text("contact_name"),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
   notes: text("notes"),
   tags: text("tags").array().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -281,6 +308,10 @@ export const adCampaigns = pgTable(
     name: text("name").notNull(),
     status: campaignStatus("status").notNull().default("active"),
     category: text("category"),
+    /** Client-set categorization: "typeform" (Typeform-focused) or "normal". */
+    adFocus: text("ad_focus"),
+    /** Set when an admin flags this ad for review; null = not flagged. */
+    flaggedReason: text("flagged_reason"),
     currency: text("currency").notNull().default("USD"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -312,6 +343,10 @@ export const adDailyMetrics = pgTable(
     results: integer("results").notNull().default(0),
     /** CTR as a fraction (0.012 = 1.2%). */
     ctr: numeric("ctr", { precision: 8, scale: 5 }).notNull().default("0"),
+    /** Cumulative follower count as of this day, when the provider/tracker reports it. */
+    totalFollowers: integer("total_followers"),
+    /** New followers gained this day. Powers Cost per Follower. */
+    newFollowers: integer("new_followers"),
     status: campaignStatus("status").notNull().default("active"),
     category: text("category"),
     currency: text("currency").notNull().default("USD"),

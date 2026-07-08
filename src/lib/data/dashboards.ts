@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   AdMetricRecord,
   CallRecord,
+  ObjectionType,
   SetterActivityRecord,
 } from "@/domain/metrics";
 import type { OverrideRecord } from "@/lib/kpi/resolve";
@@ -16,15 +17,45 @@ export interface CallRow {
   id: string;
   clientId: string;
   closerUserId: string | null;
+  bookedBySetterId: string | null;
   date: string;
   outcome: CallRecord["outcome"];
   revenue: number;
   cashCollected: number;
   currency: string;
   leadSource: string | null;
-  objectionReason: string | null;
+  objectionType: ObjectionType | null;
+  objectionNotes: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
   notes: string | null;
   tags: string[];
+}
+
+const CALL_COLUMNS =
+  "id, client_id, closer_user_id, booked_by_setter_id, date, outcome, revenue, cash_collected, currency, lead_source, objection_type, objection_notes, contact_name, contact_phone, contact_email, notes, tags";
+
+function toCallRow(c: Record<string, unknown>): CallRow {
+  return {
+    id: c.id as string,
+    clientId: c.client_id as string,
+    closerUserId: c.closer_user_id as string | null,
+    bookedBySetterId: c.booked_by_setter_id as string | null,
+    date: c.date as string,
+    outcome: c.outcome as CallRecord["outcome"],
+    revenue: Number(c.revenue),
+    cashCollected: Number(c.cash_collected),
+    currency: c.currency as string,
+    leadSource: c.lead_source as string | null,
+    objectionType: c.objection_type as ObjectionType | null,
+    objectionNotes: c.objection_notes as string | null,
+    contactName: c.contact_name as string | null,
+    contactPhone: c.contact_phone as string | null,
+    contactEmail: c.contact_email as string | null,
+    notes: c.notes as string | null,
+    tags: (c.tags as string[]) ?? [],
+  };
 }
 
 export async function loadCalls(
@@ -35,28 +66,13 @@ export async function loadCalls(
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("calls")
-    .select(
-      "id, client_id, closer_user_id, date, outcome, revenue, cash_collected, currency, lead_source, objection_reason, notes, tags",
-    )
+    .select(CALL_COLUMNS)
     .eq("client_id", clientId)
     .gte("date", fromIso)
     .lte("date", toIso)
     .order("date", { ascending: false });
 
-  return (data ?? []).map((c) => ({
-    id: c.id,
-    clientId: c.client_id,
-    closerUserId: c.closer_user_id,
-    date: c.date,
-    outcome: c.outcome,
-    revenue: Number(c.revenue),
-    cashCollected: Number(c.cash_collected),
-    currency: c.currency,
-    leadSource: c.lead_source,
-    objectionReason: c.objection_reason,
-    notes: c.notes,
-    tags: c.tags ?? [],
-  }));
+  return (data ?? []).map(toCallRow);
 }
 
 /**
@@ -73,7 +89,7 @@ export async function loadClosedDealsTrend(
     .from("calls")
     .select("date, revenue, outcome")
     .eq("client_id", clientId)
-    .eq("outcome", "closed")
+    .in("outcome", ["paid_in_full", "split_pay"])
     .gte("date", fromIso)
     .lte("date", toIso)
     .order("date", { ascending: true });
@@ -99,6 +115,7 @@ export function toCallRecords(rows: CallRow[]): CallRecord[] {
     cashCollected: r.cashCollected,
     currency: r.currency,
     date: r.date,
+    objectionType: r.objectionType,
   }));
 }
 
@@ -138,10 +155,8 @@ export async function loadSetterActivity(
 
 export interface AdMetricRow extends AdMetricRecord {
   campaignId: string;
-  impressions: number;
   reach: number;
-  ctr: number;
-  status: string;
+  totalFollowers: number | null;
   category: string | null;
 }
 
@@ -154,7 +169,7 @@ export async function loadAdMetrics(
   const { data } = await supabase
     .from("ad_daily_metrics")
     .select(
-      "campaign_id, date, spend, impressions, reach, results, ctr, status, category, currency",
+      "campaign_id, date, spend, impressions, reach, results, ctr, total_followers, new_followers, status, category, currency",
     )
     .eq("client_id", clientId)
     .gte("date", fromIso)
@@ -169,7 +184,9 @@ export async function loadAdMetrics(
     reach: r.reach,
     results: r.results,
     ctr: Number(r.ctr),
-    status: r.status,
+    totalFollowers: r.total_followers,
+    newFollowers: r.new_followers,
+    status: r.status as AdMetricRow["status"],
     category: r.category,
     currency: r.currency,
   }));
@@ -197,6 +214,31 @@ export async function loadCampaigns(clientId: string): Promise<CampaignRow[]> {
     category: r.category,
     currency: r.currency,
   }));
+}
+
+export interface UserRef {
+  id: string;
+  fullName: string | null;
+}
+
+/** Users with a given role on a client (for the Closer Leaderboard / Setter Summary). */
+export async function loadMembersByRole(
+  clientId: string,
+  role: "closer" | "setter",
+): Promise<UserRef[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("user_id")
+    .eq("client_id", clientId)
+    .eq("role", role);
+  const userIds = [...new Set((memberships ?? []).map((m) => m.user_id))];
+  if (userIds.length === 0) return [];
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, full_name")
+    .in("id", userIds);
+  return (users ?? []).map((u) => ({ id: u.id, fullName: u.full_name }));
 }
 
 export interface GoalRow {

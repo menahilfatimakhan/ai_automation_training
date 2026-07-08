@@ -108,6 +108,82 @@ export default async function MasterDashboardPage({
           readOnly={readOnly}
         />
       </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">
+            Top performers (MTD)
+          </h2>
+          {view.leaderboard.length === 0 ? (
+            <p className="text-sm text-ink-faint">No closer activity this month yet.</p>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs uppercase text-ink-faint">
+                <tr>
+                  <th className="py-1">Closer</th>
+                  <th className="py-1">Calls</th>
+                  <th className="py-1">Deals</th>
+                  <th className="py-1">Close Rate</th>
+                  <th className="py-1">Show-Up</th>
+                  <th className="py-1">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {view.leaderboard.map((row) => (
+                  <tr key={row.userId} className="border-t border-line">
+                    <td className="py-1.5">{row.name}</td>
+                    <td className="py-1.5">{row.callsTaken}</td>
+                    <td className="py-1.5">{row.dealsWon}</td>
+                    <td className="py-1.5">{Math.round(row.closeRate * 100)}%</td>
+                    <td className="py-1.5">{Math.round(row.showUpRate * 100)}%</td>
+                    <td className="py-1.5 tabular-nums">
+                      {row.revenue.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: view.currency,
+                        maximumFractionDigits: 0,
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="card p-4">
+          <h2 className="mb-3 text-sm font-medium text-ink-soft">
+            Setter activity (MTD)
+          </h2>
+          {view.setterSummary.length === 0 ? (
+            <p className="text-sm text-ink-faint">No setter activity this month yet.</p>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs uppercase text-ink-faint">
+                <tr>
+                  <th className="py-1">Setter</th>
+                  <th className="py-1">Convos</th>
+                  <th className="py-1">Replies</th>
+                  <th className="py-1">Proposals</th>
+                  <th className="py-1">Booked</th>
+                  <th className="py-1">Follow-ups</th>
+                </tr>
+              </thead>
+              <tbody>
+                {view.setterSummary.map((row) => (
+                  <tr key={row.userId} className="border-t border-line">
+                    <td className="py-1.5">{row.name}</td>
+                    <td className="py-1.5">{row.conversations}</td>
+                    <td className="py-1.5">{row.replies}</td>
+                    <td className="py-1.5">{row.proposals}</td>
+                    <td className="py-1.5">{row.callsBooked}</td>
+                    <td className="py-1.5">{row.followUps}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

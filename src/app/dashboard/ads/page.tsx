@@ -2,11 +2,14 @@ import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { isClientViewer, canSeeAggregate, landingRoute } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
-import { loadAdMetrics, loadCampaigns } from "@/lib/data/dashboards";
+import { loadAdMetrics, loadCalls, loadCampaigns, loadSetterActivity, toCallRecords } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
+import { getProviders } from "@/providers/registry";
+import { computeAdKpis, computeSalesKpis } from "@/lib/kpi/engine";
 import { AiPanel } from "@/components/AiPanel";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
+import { formatMoney, formatPercent, formatMultiple } from "@/lib/format";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { RangeSelector } from "@/components/RangeSelector";
 import { SyncButton } from "@/components/SyncButton";
@@ -41,13 +44,46 @@ export default async function AdsDashboardPage({
   const range: RangeKey = isRangeKey(sp.range) ? sp.range : "30d";
   const { from, to, label: rangeLabel } = resolveRange(range);
 
-  const [campaigns, metrics, syncedLabel, notifications] = await Promise.all([
+  const [campaigns, metrics, syncedLabel, notifications, callRows, setterRows] = await Promise.all([
     loadCampaigns(active.id),
     loadAdMetrics(active.id, from, to),
     lastSyncedLabel(active.id),
     loadNotifications(active.id),
+    loadCalls(active.id, from, to),
+    loadSetterActivity(active.id, from, to),
   ]);
   const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
+
+  // Headline ad KPIs (ROAS Cash/Rev, cost/call/conversation/customer/follower,
+  // CTR/CPM/CPC) — sales/setter figures are supplied for the same range so the
+  // Ads dashboard's attribution matches the Sales/Setter dashboards exactly.
+  const fx = getProviders().fx;
+  const sales = await computeSalesKpis(toCallRecords(callRows), active.reportingCurrency, fx);
+  const newConversations = setterRows.reduce((s, r) => s + r.conversations, 0);
+  const adKpis = await computeAdKpis(metrics, active.reportingCurrency, fx, {
+    revenue: sales.revenue,
+    cashCollected: sales.cashCollected,
+    callsTaken: sales.callsTaken,
+    closedDeals: sales.closedDeals,
+    newConversations,
+  });
+  const money = (n: number) => formatMoney(n, active.reportingCurrency);
+  const headlineCards: { label: string; value: string }[] = [
+    { label: "Total Spend", value: money(adKpis.adSpend) },
+    { label: "Total Leads", value: adKpis.totalLeads.toLocaleString("en-US") },
+    {
+      label: "Cost / Follower",
+      value: adKpis.followersGained > 0 ? money(adKpis.costPerFollower) : "—",
+    },
+    { label: "Cost / Convo", value: money(adKpis.costPerConversation) },
+    { label: "ROAS Cash", value: formatMultiple(adKpis.roasCash) },
+    { label: "ROAS Rev", value: formatMultiple(adKpis.roasRev) },
+    { label: "Cost / Call", value: money(adKpis.costPerCall) },
+    { label: "Cost / Customer", value: money(adKpis.costPerCustomer) },
+    { label: "CTR", value: formatPercent(adKpis.ctr) },
+    { label: "CPM", value: money(adKpis.cpm) },
+    { label: "CPC", value: money(adKpis.cpc) },
+  ];
 
   // Aggregate metrics per campaign (last 30 days).
   const aggByCampaign = new Map<string, CampaignAggregate>();
@@ -121,6 +157,15 @@ export default async function AdsDashboardPage({
           <RangeSelector active={range} />
           <ClientSwitcher options={options} activeId={active.id} />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        {headlineCards.map((c) => (
+          <div key={c.label} className="card p-3">
+            <div className="text-xs text-ink-soft">{c.label}</div>
+            <div className="mt-1 text-lg font-semibold">{c.value}</div>
+          </div>
+        ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

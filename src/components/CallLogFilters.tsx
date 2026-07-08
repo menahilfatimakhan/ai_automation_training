@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CALL_OUTCOMES, OUTCOME_LABELS, type CallOutcome } from "@/domain/metrics";
 
 const PRESETS: { value: string; label: string }[] = [
   { value: "this_month", label: "This month" },
@@ -8,7 +9,7 @@ const PRESETS: { value: string; label: string }[] = [
   { value: "ytd", label: "YTD" },
   { value: "all", label: "All time" },
 ];
-const OUTCOMES = ["all", "closed", "rescheduled", "lost", "no_show"];
+const OUTCOMES = ["all", ...CALL_OUTCOMES];
 
 /** Search / outcome / date-preset filter bar. Pushes state to the URL. */
 export function CallLogFilters({
@@ -57,7 +58,9 @@ export function CallLogFilters({
           className="rounded border border-line bg-surface-sunken px-2 py-1 outline-none focus:border-brand"
         >
           {OUTCOMES.map((o) => (
-            <option key={o} value={o}>{o}</option>
+            <option key={o} value={o}>
+              {o === "all" ? "All" : OUTCOME_LABELS[o as CallOutcome]}
+            </option>
           ))}
         </select>
       </label>

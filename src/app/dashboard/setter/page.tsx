@@ -6,7 +6,8 @@ import { loadSetterActivity } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
 import { AiPanel } from "@/components/AiPanel";
 import { computeSetterKpis } from "@/lib/kpi/engine";
-import { formatPercent, formatNumber } from "@/lib/format";
+import { pacing } from "@/lib/kpi/core";
+import { formatPercent, formatNumber, monthStartIso, monthEndIso, todayIso } from "@/lib/format";
 import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { LogDayForm } from "@/components/LogDayForm";
 import { SeriesBarChart, Funnel } from "@/components/charts";
@@ -33,14 +34,26 @@ export default async function SetterDashboardPage({
   const notifications = await loadNotifications(active.id);
   const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
 
+  // Pacing is always a calendar-month projection, independent of the page's
+  // display range — mirrors the Master dashboard's Pacing card.
+  const today = todayIso();
+  const mtdRows = await loadSetterActivity(active.id, monthStartIso(), today);
+  const mtdBooked = mtdRows.reduce((s, r) => s + r.callsBooked, 0);
+  const daysElapsed = new Date(`${today}T00:00:00Z`).getUTCDate();
+  const daysInMonth = new Date(`${monthEndIso()}T00:00:00Z`).getUTCDate();
+  const bookedPacing = pacing(mtdBooked, daysElapsed, daysInMonth);
+
   const cards = [
-    { label: "Conversations", value: formatNumber(kpis.conversations) },
-    { label: "Replies", value: formatNumber(kpis.replies) },
-    { label: "Proposals", value: formatNumber(kpis.proposals) },
-    { label: "Calls booked", value: formatNumber(kpis.callsBooked) },
-    { label: "Reply rate", value: formatPercent(kpis.replyRate) },
-    { label: "Proposal rate", value: formatPercent(kpis.proposalRate) },
-    { label: "Booking rate", value: formatPercent(kpis.bookingRate) },
+    { label: "Leads", value: formatNumber(kpis.conversations) },
+    { label: "Responses", value: formatNumber(kpis.replies) },
+    { label: "Call Proposals", value: formatNumber(kpis.proposals) },
+    { label: "Calls Booked", value: formatNumber(kpis.callsBooked) },
+    { label: "Follow-ups", value: formatNumber(kpis.followUps) },
+    { label: "Pacing", value: formatNumber(Math.round(bookedPacing)) },
+    { label: "Lead/Response %", value: formatPercent(kpis.replyRate) },
+    { label: "Proposal/Response %", value: formatPercent(kpis.proposalRate) },
+    { label: "Call/Proposal %", value: formatPercent(kpis.callProposalRate) },
+    { label: "Call/Lead %", value: formatPercent(kpis.bookingRate) },
   ];
 
   const recent = [...rows].reverse().slice(0, 7);
@@ -58,7 +71,7 @@ export default async function SetterDashboardPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
         {cards.map((c) => (
           <div
             key={c.label}

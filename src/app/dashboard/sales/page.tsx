@@ -2,23 +2,23 @@ import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
-import { loadCalls } from "@/lib/data/dashboards";
+import { loadCalls, loadMembersByRole } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
-import { todayIso, formatMoney } from "@/lib/format";
+import { todayIso } from "@/lib/format";
 import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
+import { bucketOf, type OutcomeBucket } from "@/domain/metrics";
 import { LogCallForm } from "@/components/LogCallForm";
 import { OutcomePie, Funnel, HBarChart } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { RangeSelector } from "@/components/RangeSelector";
-import { TagEditor } from "@/components/TagEditor";
 import { AiPanel } from "@/components/AiPanel";
-import { OutcomeBadge, Money } from "@/components/badges";
+import { TodaysCallRow } from "@/components/TodaysCallRow";
 
-const OUTCOME_LABEL: Record<string, string> = {
+const BUCKET_LABEL: Record<OutcomeBucket, string> = {
   closed: "Closed",
-  rescheduled: "Rescheduled",
-  lost: "Lost",
+  showed_not_closed: "Showed, didn't close",
   no_show: "No-show",
+  rescheduled: "Rescheduled",
 };
 
 export default async function SalesDashboardPage({
@@ -39,6 +39,8 @@ export default async function SalesDashboardPage({
   const mtdCalls = await loadCalls(active.id, from, to);
   const todaysCalls = mtdCalls.filter((c) => c.date === today);
   const notifications = await loadNotifications(active.id);
+  const closers = await loadMembersByRole(active.id, "closer");
+  const closerNameById = new Map(closers.map((c) => [c.id, c.fullName ?? "Unknown"]));
   const readOnly = !ctx.isAdmin && isClientViewer(ctx, active.id);
 
   // First-call gate: a closer must log their first call today to unlock.
@@ -47,27 +49,32 @@ export default async function SalesDashboardPage({
   );
   const gated = isCloser && !ctx.isAdmin && todaysCalls.length === 0;
 
-  const outcomeCounts = mtdCalls.reduce<Record<string, number>>((acc, c) => {
-    acc[c.outcome] = (acc[c.outcome] ?? 0) + 1;
-    return acc;
-  }, {});
-  const pieData = Object.keys(OUTCOME_LABEL).map((k) => ({
+  const bucketCounts = mtdCalls.reduce<Record<OutcomeBucket, number>>(
+    (acc, c) => {
+      const b = bucketOf(c.outcome);
+      acc[b] = (acc[b] ?? 0) + 1;
+      return acc;
+    },
+    { closed: 0, showed_not_closed: 0, no_show: 0, rescheduled: 0 },
+  );
+  const pieData = (Object.keys(BUCKET_LABEL) as OutcomeBucket[]).map((k) => ({
     name: k,
-    value: outcomeCounts[k] ?? 0,
+    value: bucketCounts[k] ?? 0,
   }));
 
-  // Conversion funnel: calls booked → showed up → closed.
-  const noShows = outcomeCounts["no_show"] ?? 0;
+  // Conversion funnel: calls taken → showed up → closed.
+  const callsTaken = mtdCalls.length - bucketCounts.rescheduled;
+  const shown = bucketCounts.closed + bucketCounts.showed_not_closed;
   const funnelSteps = [
-    { label: "Calls", value: mtdCalls.length },
-    { label: "Showed", value: mtdCalls.length - noShows },
-    { label: "Closed", value: outcomeCounts["closed"] ?? 0 },
+    { label: "Calls Taken", value: callsTaken },
+    { label: "Showed", value: shown },
+    { label: "Closed", value: bucketCounts.closed },
   ];
 
   // Revenue by lead source (closed deals).
   const revBySource = new Map<string, number>();
   for (const c of mtdCalls) {
-    if (c.outcome === "closed") {
+    if (bucketOf(c.outcome) === "closed") {
       const k = c.leadSource ?? "unknown";
       revBySource.set(k, (revBySource.get(k) ?? 0) + c.revenue);
     }
@@ -142,6 +149,7 @@ export default async function SalesDashboardPage({
             <thead className="text-xs uppercase text-ink-faint">
               <tr>
                 <th className="py-1">Outcome</th>
+                <th className="py-1">Closer</th>
                 <th className="py-1">Revenue</th>
                 <th className="py-1">Cash</th>
                 <th className="py-1">Source</th>
@@ -150,19 +158,11 @@ export default async function SalesDashboardPage({
             </thead>
             <tbody>
               {todaysCalls.map((c) => (
-                <tr key={c.id} className="border-t border-line">
-                  <td className="py-1.5"><OutcomeBadge outcome={c.outcome} /></td>
-                  <td className="py-1.5">
-                    <Money amount={c.revenue} formatted={formatMoney(c.revenue, c.currency)} />
-                  </td>
-                  <td className="py-1.5">
-                    <Money amount={c.cashCollected} formatted={formatMoney(c.cashCollected, c.currency)} />
-                  </td>
-                  <td className="py-1.5 text-ink-soft">{c.leadSource ?? "—"}</td>
-                  <td className="py-1.5">
-                    <TagEditor id={c.id} tags={c.tags} />
-                  </td>
-                </tr>
+                <TodaysCallRow
+                  key={c.id}
+                  call={c}
+                  closerName={c.closerUserId ? closerNameById.get(c.closerUserId) ?? "Unknown" : "—"}
+                />
               ))}
             </tbody>
           </table>
