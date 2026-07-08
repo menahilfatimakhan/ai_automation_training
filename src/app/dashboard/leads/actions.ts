@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSessionContext } from "@/lib/auth";
+import { recordAudit } from "@/lib/audit";
 
 /** Inline tag editing for a lead. */
 export async function setLeadTags(formData: FormData) {
@@ -37,11 +38,29 @@ export async function reassignLead(formData: FormData) {
   const ownerUserId = String(formData.get("ownerUserId")) || null;
 
   const supabase = await createSupabaseServerClient();
+  const { data: before } = await supabase
+    .from("leads")
+    .select("client_id, owner_user_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!before) throw new Error("Lead not found or not permitted");
+
   const { error } = await supabase
     .from("leads")
     .update({ owner_user_id: ownerUserId, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  await recordAudit({
+    clientId: before.client_id,
+    entityType: "lead",
+    entityId: id,
+    action: "reassign",
+    before: { ownerUserId: before.owner_user_id },
+    after: { ownerUserId },
+    actorUserId: ctx.userId,
+  });
+
   revalidatePath("/dashboard/leads");
 }
 

@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { isClientViewer } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
-import { loadCalls, loadMembersByRole } from "@/lib/data/dashboards";
+import { loadCalls, loadClientTimezone, loadMembersByRole } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
-import { todayIso } from "@/lib/format";
+import { todayIsoInTz } from "@/lib/format";
 import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { bucketOf, type OutcomeBucket } from "@/domain/metrics";
 import { LogCallForm } from "@/components/LogCallForm";
@@ -35,7 +35,10 @@ export default async function SalesDashboardPage({
 
   const range: RangeKey = isRangeKey(sp.range) ? sp.range : "mtd";
   const { from, to, label: rangeLabel } = resolveRange(range);
-  const today = todayIso();
+  // "Today" for the first-call gate/date default must match the closer's own
+  // calendar day, not a UTC cutoff that drifts around midnight UTC.
+  const timezone = await loadClientTimezone(active.id);
+  const today = todayIsoInTz(timezone);
   const mtdCalls = await loadCalls(active.id, from, to);
   const todaysCalls = mtdCalls.filter((c) => c.date === today);
   const notifications = await loadNotifications(active.id);
@@ -117,7 +120,7 @@ export default async function SalesDashboardPage({
               Log your first call of the day to unlock today’s metrics.
             </p>
           )}
-          <LogCallForm clientId={active.id} currency={active.reportingCurrency} />
+          <LogCallForm clientId={active.id} currency={active.reportingCurrency} today={today} />
         </section>
 
         <div className={gated ? "pointer-events-none select-none blur-sm" : ""}>

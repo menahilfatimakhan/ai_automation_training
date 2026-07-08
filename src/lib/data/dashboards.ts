@@ -247,6 +247,17 @@ export async function loadMembersByRole(
   return (users ?? []).map((u) => ({ id: u.id, fullName: u.full_name }));
 }
 
+/** A client's configured timezone (client_settings), defaulting to UTC when unset. */
+export async function loadClientTimezone(clientId: string): Promise<string> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("client_settings")
+    .select("timezone")
+    .eq("client_id", clientId)
+    .maybeSingle();
+  return data?.timezone ?? "UTC";
+}
+
 export interface GoalRow {
   revenueGoal: number;
   callsGoal: number;

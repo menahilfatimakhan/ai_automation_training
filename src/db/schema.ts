@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   integer,
   jsonb,
   numeric,
@@ -86,6 +87,8 @@ export const dashboardKey = pgEnum("dashboard_key", [
   "setter",
 ]);
 export const reportType = pgEnum("report_type", ["daily", "weekly", "monthly"]);
+export const auditAction = pgEnum("audit_action", ["update", "delete", "reassign"]);
+export const auditEntity = pgEnum("audit_entity", ["call", "lead"]);
 
 const money = (name: string) => numeric(name, { precision: 14, scale: 2 });
 
@@ -137,41 +140,49 @@ export const memberships = pgTable(
 );
 
 // ─── Sales activity ──────────────────────────────────────────────────────────
-export const calls = pgTable("calls", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  clientId: uuid("client_id")
-    .notNull()
-    .references(() => clients.id, { onDelete: "cascade" }),
-  /** The closer who owns this call (a user with role=closer). */
-  closerUserId: uuid("closer_user_id").references(() => users.id, {
-    onDelete: "set null",
+export const calls = pgTable(
+  "calls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    /** The closer who owns this call (a user with role=closer). */
+    closerUserId: uuid("closer_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** The setter who booked this call, for the Setter Attribution Panel. */
+    bookedBySetterId: uuid("booked_by_setter_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    date: date("date").notNull(),
+    outcome: callOutcome("outcome").notNull(),
+    revenue: money("revenue").notNull().default("0"),
+    cashCollected: money("cash_collected").notNull().default("0"),
+    currency: text("currency").notNull().default("USD"),
+    leadSource: text("lead_source"),
+    /** Controlled-vocabulary objection category (the 6 client counters). */
+    objectionType: objectionType("objection_type"),
+    /** Free-text objection detail — kept separate from the enum above. */
+    objectionNotes: text("objection_notes"),
+    contactName: text("contact_name"),
+    contactPhone: text("contact_phone"),
+    contactEmail: text("contact_email"),
+    notes: text("notes"),
+    tags: text("tags").array().notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    // Every dashboard load filters calls by (client_id, date range) — this is
+    // the single hottest query pattern in the app.
+    clientDateIdx: index("calls_client_date_idx").on(t.clientId, t.date),
   }),
-  /** The setter who booked this call, for the Setter Attribution Panel. */
-  bookedBySetterId: uuid("booked_by_setter_id").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  date: date("date").notNull(),
-  outcome: callOutcome("outcome").notNull(),
-  revenue: money("revenue").notNull().default("0"),
-  cashCollected: money("cash_collected").notNull().default("0"),
-  currency: text("currency").notNull().default("USD"),
-  leadSource: text("lead_source"),
-  /** Controlled-vocabulary objection category (the 6 client counters). */
-  objectionType: objectionType("objection_type"),
-  /** Free-text objection detail — kept separate from the enum above. */
-  objectionNotes: text("objection_notes"),
-  contactName: text("contact_name"),
-  contactPhone: text("contact_phone"),
-  contactEmail: text("contact_email"),
-  notes: text("notes"),
-  tags: text("tags").array().notNull().default([]),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+);
 
 // ─── Leads & follow-ups ──────────────────────────────────────────────────────
 export const leads = pgTable("leads", {
@@ -372,6 +383,10 @@ export const adDailyMetrics = pgTable(
       t.campaignId,
       t.date,
     ),
+    // Dashboards filter by (client_id, date range) without a campaign_id —
+    // the unique index above leads with campaign_id, so it doesn't serve
+    // that query pattern well on its own.
+    clientDateIdx: index("ad_metrics_client_date_idx").on(t.clientId, t.date),
   }),
 );
 
@@ -464,22 +479,29 @@ export const aiSuggestions = pgTable("ai_suggestions", {
 });
 
 // ─── Notifications (in-app delivery channel for the Notifier port) ───────────
-export const notifications = pgTable("notifications", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  clientId: uuid("client_id")
-    .notNull()
-    .references(() => clients.id, { onDelete: "cascade" }),
-  /** Optional target user; null = visible to all client members. */
-  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(),
-  title: text("title").notNull(),
-  body: text("body").notNull(),
-  meta: jsonb("meta").notNull().default({}),
-  read: boolean("read").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    /** Optional target user; null = visible to all client members. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    meta: jsonb("meta").notNull().default({}),
+    read: boolean("read").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    // The AI panel loads a client's notifications newest-first on every dashboard page.
+    clientCreatedIdx: index("notifications_client_created_idx").on(t.clientId, t.createdAt),
+  }),
+);
 
 // ─── Settings (admin-configurable, per client) ───────────────────────────────
 /** Slack/notification preferences and delivery schedule, one row per client. */
@@ -554,6 +576,33 @@ export const alertThresholds = pgTable(
       t.clientId,
       t.metricKey,
     ),
+  }),
+);
+
+// ─── Audit trail (who/when/before-value on call edit/delete, lead reassignment) ──
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    entityType: auditEntity("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    action: auditAction("action").notNull(),
+    /** The row's state immediately before this action (empty object for n/a). */
+    beforeValue: jsonb("before_value").notNull().default({}),
+    /** The row's state immediately after; null for deletes. */
+    afterValue: jsonb("after_value"),
+    actorUserId: uuid("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    clientCreatedIdx: index("audit_log_client_created_idx").on(t.clientId, t.createdAt),
   }),
 );
 

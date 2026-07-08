@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { logCall } from "@/app/dashboard/sales/actions";
 import { ActionForm } from "@/components/ActionForm";
-import { todayIso } from "@/lib/format";
 import {
   CALL_OUTCOMES,
   OBJECTION_TYPES,
@@ -26,9 +25,12 @@ const OUTCOME_GROUPS: { label: string; outcomes: CallOutcome[] }[] = [
 export function LogCallForm({
   clientId,
   currency,
+  today,
 }: {
   clientId: string;
   currency: string;
+  /** The client's own "today" (timezone-aware) — never a raw UTC cutoff. */
+  today: string;
 }) {
   const [outcome, setOutcome] = useState<CallOutcome>(CALL_OUTCOMES[0]);
   const showObjection = bucketOf(outcome) === "showed_not_closed";
@@ -58,7 +60,7 @@ export function LogCallForm({
 
       <label className="text-xs text-ink-soft">
         Date
-        <input type="date" name="date" defaultValue={todayIso()} className={inputCls} />
+        <input type="date" name="date" defaultValue={today} className={inputCls} />
       </label>
 
       <label className="text-xs text-ink-soft">

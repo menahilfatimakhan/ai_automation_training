@@ -15,6 +15,7 @@ import {
   updateClientSettings,
 } from "@/app/dashboard/admin/actions";
 import { runAnomalyCheck } from "@/app/dashboard/ai-actions";
+import { loadAuditLogAll } from "@/lib/data/audit";
 import { ActionForm } from "@/components/ActionForm";
 
 const DASHBOARDS = ["master", "sales", "ads", "setter"] as const;
@@ -39,6 +40,7 @@ export default async function AdminPage() {
 
   const { clients, users, memberships, goals, connections, settings, personas, thresholds } =
     await loadAdminData();
+  const auditLog = await loadAuditLogAll(50);
   const month = monthStartIso();
   const goalFor = (clientId: string) =>
     goals.find((g) => g.client_id === clientId && g.month === month);
@@ -458,6 +460,43 @@ export default async function AdminPage() {
           </label>
           <button className={btnCls}>Save</button>
         </form>
+      </section>
+
+      {/* ── Audit trail ──────────────────────────────────────────────── */}
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-medium text-ink-soft">Audit trail</h2>
+        <p className="mb-3 text-xs text-ink-faint">
+          Every call edit/delete and lead reassignment — who, when, and the
+          value immediately before the change.
+        </p>
+        {auditLog.length === 0 ? (
+          <p className="text-sm text-ink-faint">No audited changes yet.</p>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase text-ink-faint">
+              <tr>
+                <th className="py-1">When</th>
+                <th className="py-1">Client</th>
+                <th className="py-1">Entity</th>
+                <th className="py-1">Action</th>
+                <th className="py-1">By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditLog.map((a) => (
+                <tr key={a.id} className="border-t border-line align-top">
+                  <td className="py-1.5 text-ink-soft">{new Date(a.createdAt).toLocaleString()}</td>
+                  <td className="py-1.5">{clientName(a.clientId)}</td>
+                  <td className="py-1.5">
+                    {a.entityType} <span className="text-ink-faint">{a.entityId.slice(0, 8)}</span>
+                  </td>
+                  <td className="py-1.5">{a.action}</td>
+                  <td className="py-1.5 text-ink-soft">{a.actorUserId ? userLabel(a.actorUserId) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       {/* ── Anomaly detection dry-run ────────────────────────────────── */}
