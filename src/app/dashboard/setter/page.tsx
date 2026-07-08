@@ -6,11 +6,18 @@ import { loadSetterActivity } from "@/lib/data/dashboards";
 import { loadNotifications } from "@/lib/data/notifications";
 import { AiPanel } from "@/components/AiPanel";
 import { computeSetterKpis } from "@/lib/kpi/engine";
-import { pacing } from "@/lib/kpi/core";
-import { formatPercent, formatNumber, monthStartIso, monthEndIso, todayIso } from "@/lib/format";
+import { pacing, safeDivide } from "@/lib/kpi/core";
+import {
+  formatPercent,
+  formatNumber,
+  monthStartIso,
+  monthEndIso,
+  todayIso,
+  daysAgoIso,
+} from "@/lib/format";
 import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { LogDayForm } from "@/components/LogDayForm";
-import { SeriesBarChart, Funnel } from "@/components/charts";
+import { SeriesBarChart, Funnel, Heatmap, Sparkline } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { RangeSelector } from "@/components/RangeSelector";
 
@@ -43,17 +50,54 @@ export default async function SetterDashboardPage({
   const daysInMonth = new Date(`${monthEndIso()}T00:00:00Z`).getUTCDate();
   const bookedPacing = pacing(mtdBooked, daysElapsed, daysInMonth);
 
+  // 30-day activity heatmap — always a trailing 30 days, independent of the
+  // page's display range (matches the client's "30-day heatmap" spec).
+  const heatmapRows = await loadSetterActivity(active.id, daysAgoIso(29), today);
+  const heatmapByDate = new Map(
+    heatmapRows.map((r) => [
+      r.date,
+      r.conversations + r.replies + r.proposals + r.callsBooked + r.followUps,
+    ]),
+  );
+  const heatmapData = Array.from({ length: 30 }, (_, i) => {
+    const date = daysAgoIso(29 - i);
+    return { date, value: heatmapByDate.get(date) ?? 0 };
+  });
+
+  // Mini trend lines per card, from the selected range's daily rows.
+  type SetterRow = (typeof rows)[number];
+  const sparkRaw = (key: "conversations" | "replies" | "proposals" | "callsBooked" | "followUps") =>
+    rows.map((r) => r[key]);
+  const sparkRate = (num: (r: SetterRow) => number, den: (r: SetterRow) => number) =>
+    rows.map((r) => Math.round(safeDivide(num(r), den(r)) * 100));
+
   const cards = [
-    { label: "Leads", value: formatNumber(kpis.conversations) },
-    { label: "Responses", value: formatNumber(kpis.replies) },
-    { label: "Call Proposals", value: formatNumber(kpis.proposals) },
-    { label: "Calls Booked", value: formatNumber(kpis.callsBooked) },
-    { label: "Follow-ups", value: formatNumber(kpis.followUps) },
-    { label: "Pacing", value: formatNumber(Math.round(bookedPacing)) },
-    { label: "Lead/Response %", value: formatPercent(kpis.replyRate) },
-    { label: "Proposal/Response %", value: formatPercent(kpis.proposalRate) },
-    { label: "Call/Proposal %", value: formatPercent(kpis.callProposalRate) },
-    { label: "Call/Lead %", value: formatPercent(kpis.bookingRate) },
+    { label: "Leads", value: formatNumber(kpis.conversations), spark: sparkRaw("conversations") },
+    { label: "Responses", value: formatNumber(kpis.replies), spark: sparkRaw("replies") },
+    { label: "Call Proposals", value: formatNumber(kpis.proposals), spark: sparkRaw("proposals") },
+    { label: "Calls Booked", value: formatNumber(kpis.callsBooked), spark: sparkRaw("callsBooked") },
+    { label: "Follow-ups", value: formatNumber(kpis.followUps), spark: sparkRaw("followUps") },
+    { label: "Pacing", value: formatNumber(Math.round(bookedPacing)), spark: undefined },
+    {
+      label: "Lead/Response %",
+      value: formatPercent(kpis.replyRate),
+      spark: sparkRate((r) => r.replies, (r) => r.conversations),
+    },
+    {
+      label: "Proposal/Response %",
+      value: formatPercent(kpis.proposalRate),
+      spark: sparkRate((r) => r.proposals, (r) => r.replies),
+    },
+    {
+      label: "Call/Proposal %",
+      value: formatPercent(kpis.callProposalRate),
+      spark: sparkRate((r) => r.callsBooked, (r) => r.proposals),
+    },
+    {
+      label: "Call/Lead %",
+      value: formatPercent(kpis.bookingRate),
+      spark: sparkRate((r) => r.callsBooked, (r) => r.conversations),
+    },
   ];
 
   const recent = [...rows].reverse().slice(0, 7);
@@ -73,15 +117,24 @@ export default async function SetterDashboardPage({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
         {cards.map((c) => (
-          <div
-            key={c.label}
-            className="card p-3"
-          >
+          <div key={c.label} className="card p-3">
             <div className="text-xs text-ink-soft">{c.label}</div>
             <div className="mt-1 text-lg font-semibold">{c.value}</div>
+            {c.spark && c.spark.length > 1 && (
+              <div className="mt-1 -mb-1">
+                <Sparkline data={c.spark} />
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      <section className="card p-4">
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
+          Activity heatmap (last 30 days)
+        </h2>
+        <Heatmap data={heatmapData} />
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card p-4">
@@ -141,7 +194,7 @@ export default async function SetterDashboardPage({
         </table>
       </section>
 
-      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} />
+      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} dashboard="setter" />
     </div>
   );
 }

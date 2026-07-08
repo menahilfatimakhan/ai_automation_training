@@ -17,6 +17,8 @@ interface ClientInfo {
   currency: string;
 }
 
+type DashboardKey = "master" | "sales" | "ads" | "setter";
+
 async function metricsForClient(client: ClientInfo) {
   const view = await computeMasterView(client.id, client.currency);
   const metrics: Record<string, number | string> = {};
@@ -24,6 +26,18 @@ async function metricsForClient(client: ClientInfo) {
     metrics[card.key] = Number(card.effective.toFixed(2));
   }
   return { view, metrics };
+}
+
+/** The admin-configured coaching tone for a client's dashboard, if set (Settings). */
+async function personaFor(clientId: string, dashboard: DashboardKey): Promise<string | undefined> {
+  const supabase = createSupabaseServiceClient();
+  const { data } = await supabase
+    .from("ai_personas")
+    .select("persona")
+    .eq("client_id", clientId)
+    .eq("dashboard", dashboard)
+    .maybeSingle();
+  return data?.persona || undefined;
 }
 
 /** Authoritative, pre-computed metric map for a client (used to ground the chat). */
@@ -38,15 +52,18 @@ export async function clientMetricsMap(
 export async function generateDashboardInsights(
   client: ClientInfo,
   scope: AiContext["task"] = "dashboard_insights",
+  dashboard: DashboardKey = "master",
 ): Promise<AiAdvice> {
   const { ai, notifier } = getProviders();
   const { view, metrics } = await metricsForClient(client);
+  const persona = await personaFor(client.id, dashboard);
 
   const advice = await ai.advise({
     task: scope,
     clientName: client.name,
     currency: client.currency,
     metrics,
+    persona,
   });
 
   const supabase = createSupabaseServiceClient();
@@ -97,8 +114,9 @@ export async function generateDashboardInsights(
 /** Next best action — advisory, delivered to the panel. */
 export async function generateNextBestAction(
   client: ClientInfo,
+  dashboard: DashboardKey = "master",
 ): Promise<AiAdvice> {
-  return generateDashboardInsights(client, "next_best_action");
+  return generateDashboardInsights(client, "next_best_action", dashboard);
 }
 
 /**
@@ -112,12 +130,14 @@ export async function generateLossDebrief(
 ): Promise<void> {
   const { ai, notifier } = getProviders();
   const { metrics } = await metricsForClient(client);
+  const persona = await personaFor(client.id, "sales");
 
   const advice = await ai.advise({
     task: "loss_debrief",
     clientName: client.name,
     currency: client.currency,
     metrics,
+    persona,
     notes: [
       context.objection ? `objection: ${context.objection}` : "",
       context.notes ? `notes: ${context.notes}` : "",
@@ -133,5 +153,35 @@ export async function generateLossDebrief(
     title: advice.headline,
     body: advice.details,
     meta: { objection: context.objection ?? null },
+  });
+}
+
+/**
+ * Campaign narrative — a short AI-written performance summary generated after
+ * each ad sync, delivered to the Ads dashboard's panel via the Notifier.
+ */
+export async function generateCampaignNarrative(
+  client: ClientInfo,
+  sync: { campaigns: number; metricRows: number; syncedAt: string },
+): Promise<void> {
+  const { ai, notifier } = getProviders();
+  const { metrics } = await metricsForClient(client);
+  const persona = await personaFor(client.id, "ads");
+
+  const advice = await ai.advise({
+    task: "dashboard_insights",
+    clientName: client.name,
+    currency: client.currency,
+    metrics,
+    persona,
+    notes: `A Meta ad sync just completed: ${sync.campaigns} campaigns, ${sync.metricRows} metric rows updated at ${sync.syncedAt}. Write a 1-2 sentence summary of campaign performance for the Ads dashboard.`,
+  });
+
+  await notifier.notify({
+    clientId: client.id,
+    kind: "campaign_narrative",
+    title: advice.headline,
+    body: advice.details,
+    meta: { sync },
   });
 }

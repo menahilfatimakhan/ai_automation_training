@@ -93,6 +93,8 @@ export default async function AdsDashboardPage({
       name: c.name,
       status: c.status,
       category: c.category,
+      adFocus: c.adFocus,
+      flaggedReason: c.flaggedReason,
       currency: c.currency,
       spend: 0,
       impressions: 0,
@@ -188,10 +190,10 @@ export default async function AdsDashboardPage({
 
       <section className="card p-4">
         <h2 className="mb-3 text-sm font-medium text-ink-soft">Campaigns</h2>
-        <AdCampaignTable rows={rows} />
+        <AdCampaignTable rows={rows} clientId={active.id} />
       </section>
 
-      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} />
+      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} dashboard="ads" />
     </div>
   );
 }

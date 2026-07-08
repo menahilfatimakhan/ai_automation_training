@@ -17,6 +17,8 @@ export interface AiContext {
   metrics: Record<string, number | string>;
   /** Optional extra context (e.g. the lost call, recent objections). */
   notes?: string;
+  /** Admin-configured coaching tone for this client/dashboard (Settings). Advisory only — never changes the RULES below. */
+  persona?: string;
 }
 
 export interface AiSuggestionDraft {

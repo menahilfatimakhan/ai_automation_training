@@ -8,7 +8,7 @@ import { todayIso } from "@/lib/format";
 import { resolveRange, isRangeKey, type RangeKey } from "@/lib/range";
 import { bucketOf, type OutcomeBucket } from "@/domain/metrics";
 import { LogCallForm } from "@/components/LogCallForm";
-import { OutcomePie, Funnel, HBarChart } from "@/components/charts";
+import { OutcomePie, Funnel, HBarChart, RevenueTrendChart } from "@/components/charts";
 import { ClientSwitcher } from "@/components/ClientSwitcher";
 import { RangeSelector } from "@/components/RangeSelector";
 import { AiPanel } from "@/components/AiPanel";
@@ -83,6 +83,17 @@ export default async function SalesDashboardPage({
     .map(([label, value]) => ({ label, value: Math.round(value) }))
     .sort((a, b) => b.value - a.value);
 
+  // Daily revenue trend (closed deals only), for this dashboard specifically.
+  const revByDate = new Map<string, number>();
+  for (const c of mtdCalls) {
+    if (bucketOf(c.outcome) === "closed") {
+      revByDate.set(c.date, (revByDate.get(c.date) ?? 0) + c.revenue);
+    }
+  }
+  const revenueTrend = [...revByDate.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([date, revenue]) => ({ date, revenue: Math.round(revenue) }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -134,6 +145,13 @@ export default async function SalesDashboardPage({
         </section>
       </div>
 
+      <section className={`card p-4 ${gated ? "pointer-events-none select-none blur-sm" : ""}`}>
+        <h2 className="mb-3 text-sm font-medium text-ink-soft">
+          Daily revenue trend ({rangeLabel})
+        </h2>
+        <RevenueTrendChart data={revenueTrend} />
+      </section>
+
       <section
         className={`card p-4 ${
           gated ? "pointer-events-none select-none blur-sm" : ""
@@ -169,7 +187,7 @@ export default async function SalesDashboardPage({
         )}
       </section>
 
-      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} />
+      <AiPanel clientId={active.id} notifications={notifications} readOnly={readOnly} dashboard="sales" />
     </div>
   );
 }

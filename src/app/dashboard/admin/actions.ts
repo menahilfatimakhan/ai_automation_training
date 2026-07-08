@@ -88,3 +88,93 @@ export async function connectAdAccount(formData: FormData) {
   revalidatePath("/dashboard/admin");
   revalidatePath("/dashboard/ads");
 }
+
+/** Update Slack/notification delivery preferences for a client (upsert). */
+export async function updateClientSettings(formData: FormData) {
+  await requireAdmin();
+  const clientId = String(formData.get("clientId"));
+  const checkbox = (name: string) => formData.get(name) === "on";
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("client_settings").upsert(
+    {
+      client_id: clientId,
+      slack_channel_id: (formData.get("slackChannelId") as string) || null,
+      slack_enabled: checkbox("slackEnabled"),
+      notify_daily_targets: checkbox("notifyDailyTargets"),
+      notify_eod_report: checkbox("notifyEodReport"),
+      notify_weekly_report: checkbox("notifyWeeklyReport"),
+      notify_monthly_report: checkbox("notifyMonthlyReport"),
+      notify_loss_debrief: checkbox("notifyLossDebrief"),
+      notify_anomaly_alerts: checkbox("notifyAnomalyAlerts"),
+      notify_shame_fame: checkbox("notifyShameFame"),
+      notify_streaks: checkbox("notifyStreaks"),
+      notify_big_deals: checkbox("notifyBigDeals"),
+      timezone: String(formData.get("timezone") || "UTC"),
+      daily_target_hour: Number(formData.get("dailyTargetHour") ?? 8) || 8,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "client_id" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/admin");
+}
+
+/** Set the AI coaching persona for one dashboard of a client (upsert). */
+export async function updateAiPersona(formData: FormData) {
+  await requireAdmin();
+  const clientId = String(formData.get("clientId"));
+  const dashboard = String(formData.get("dashboard"));
+  const persona = String(formData.get("persona") || "").trim();
+
+  const supabase = await createSupabaseServerClient();
+  if (!persona) {
+    const { error } = await supabase
+      .from("ai_personas")
+      .delete()
+      .eq("client_id", clientId)
+      .eq("dashboard", dashboard);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("ai_personas").upsert(
+      { client_id: clientId, dashboard, persona, updated_at: new Date().toISOString() },
+      { onConflict: "client_id,dashboard" },
+    );
+    if (error) throw new Error(error.message);
+  }
+  revalidatePath("/dashboard/admin");
+}
+
+/** Set (or clear) a warning/critical threshold for a KPI metric. */
+export async function setAlertThreshold(formData: FormData) {
+  await requireAdmin();
+  const clientId = String(formData.get("clientId"));
+  const metricKey = String(formData.get("metricKey"));
+  const warnRaw = formData.get("warnBelow");
+  const criticalRaw = formData.get("criticalBelow");
+  const warnBelow = warnRaw === "" || warnRaw === null ? null : String(Number(warnRaw));
+  const criticalBelow = criticalRaw === "" || criticalRaw === null ? null : String(Number(criticalRaw));
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("alert_thresholds").upsert(
+    {
+      client_id: clientId,
+      metric_key: metricKey,
+      warn_below: warnBelow,
+      critical_below: criticalBelow,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "client_id,metric_key" },
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/admin");
+}
+
+export async function deleteAlertThreshold(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id"));
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("alert_thresholds").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/admin");
+}

@@ -3,12 +3,15 @@
 import { useMemo, useState } from "react";
 import { formatMoney, formatNumber, formatPercent } from "@/lib/format";
 import { StatusBadge } from "@/components/badges";
+import { setAdCampaignFlags } from "@/app/dashboard/ads/actions";
 
 export interface CampaignAggregate {
   campaignId: string;
   name: string;
   status: string;
   category: string | null;
+  adFocus: string | null;
+  flaggedReason: string | null;
   currency: string;
   spend: number;
   impressions: number;
@@ -19,13 +22,14 @@ export interface CampaignAggregate {
 
 type ColumnKey = keyof Pick<
   CampaignAggregate,
-  "name" | "status" | "category" | "spend" | "impressions" | "reach" | "results" | "ctr"
+  "name" | "status" | "category" | "adFocus" | "spend" | "impressions" | "reach" | "results" | "ctr"
 >;
 
 const COLUMNS: { key: ColumnKey; label: string; numeric: boolean }[] = [
   { key: "name", label: "Campaign", numeric: false },
   { key: "status", label: "Status", numeric: false },
   { key: "category", label: "Category", numeric: false },
+  { key: "adFocus", label: "Focus / Flag", numeric: false },
   { key: "spend", label: "Spend", numeric: true },
   { key: "impressions", label: "Impressions", numeric: true },
   { key: "reach", label: "Reach", numeric: true },
@@ -33,8 +37,55 @@ const COLUMNS: { key: ColumnKey; label: string; numeric: boolean }[] = [
   { key: "ctr", label: "CTR", numeric: true },
 ];
 
-/** Read-only campaign table: sortable, status-filterable, hideable columns. */
-export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
+/** Inline editor for a campaign's Typeform/Normal focus + flag-for-review reason. */
+function FocusFlagCell({ clientId, row }: { clientId: string; row: CampaignAggregate }) {
+  const [editing, setEditing] = useState(false);
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-1.5 text-left hover:underline"
+      >
+        <span>{row.adFocus === "typeform" ? "Typeform" : row.adFocus === "normal" ? "Normal" : "—"}</span>
+        {row.flaggedReason && (
+          <span className="badge bg-accent-rose/15 text-accent-rose" title={row.flaggedReason}>
+            Flagged
+          </span>
+        )}
+      </button>
+    );
+  }
+  return (
+    <form
+      action={setAdCampaignFlags}
+      onSubmit={() => setEditing(false)}
+      className="flex flex-col gap-1 rounded border border-line bg-surface-sunken p-2"
+    >
+      <input type="hidden" name="clientId" value={clientId} />
+      <input type="hidden" name="campaignId" value={row.campaignId} />
+      <select name="adFocus" defaultValue={row.adFocus ?? ""} className="rounded border border-line bg-surface px-1 py-0.5 text-xs">
+        <option value="">Uncategorized</option>
+        <option value="typeform">Typeform-focused</option>
+        <option value="normal">Normal</option>
+      </select>
+      <input
+        name="flaggedReason"
+        defaultValue={row.flaggedReason ?? ""}
+        placeholder="Flag reason (blank to clear)"
+        className="rounded border border-line bg-surface px-1 py-0.5 text-xs"
+      />
+      <div className="flex gap-2">
+        <button className="text-xs font-medium text-brand hover:underline">Save</button>
+        <button type="button" onClick={() => setEditing(false)} className="text-xs text-ink-faint">
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Read-only-metrics campaign table: sortable, status-filterable, hideable columns. */
+export function AdCampaignTable({ rows, clientId }: { rows: CampaignAggregate[]; clientId: string }) {
   const [sortKey, setSortKey] = useState<ColumnKey>("spend");
   const [asc, setAsc] = useState(false);
   const [status, setStatus] = useState<string>("all");
@@ -142,7 +193,13 @@ export function AdCampaignTable({ rows }: { rows: CampaignAggregate[] }) {
             <tr key={r.campaignId} className="border-t border-line">
               {visibleCols.map((c) => (
                 <td key={c.key} className={`py-1.5 ${c.numeric ? "text-right tabular-nums" : ""}`}>
-                  {c.key === "status" ? <StatusBadge status={r.status} /> : fmt(c.key, r)}
+                  {c.key === "status" ? (
+                    <StatusBadge status={r.status} />
+                  ) : c.key === "adFocus" ? (
+                    <FocusFlagCell clientId={clientId} row={r} />
+                  ) : (
+                    fmt(c.key, r)
+                  )}
                 </td>
               ))}
             </tr>

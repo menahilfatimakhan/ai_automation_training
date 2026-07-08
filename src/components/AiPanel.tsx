@@ -11,7 +11,16 @@ const KIND_LABEL: Record<string, string> = {
   ai_insight: "Insight",
   next_best_action: "Next best action",
   loss_debrief: "Loss debrief",
+  campaign_narrative: "Campaign summary",
   alert: "Alert",
+  anomaly_alert: "Anomaly alert",
+  daily_target: "Daily target",
+  eod_report: "EOD report",
+  weekly_report: "Weekly report",
+  monthly_report: "Monthly report",
+  shame_fame: "Shame / Fame",
+  streak: "Streak",
+  big_deal: "Big deal",
 };
 
 /**
@@ -23,10 +32,13 @@ export function AiPanel({
   clientId,
   notifications,
   readOnly,
+  dashboard = "master",
 }: {
   clientId: string;
   notifications: NotificationRow[];
   readOnly: boolean;
+  /** Which dashboard's AI persona to apply (Settings → AI coaching personality). */
+  dashboard?: "master" | "sales" | "ads" | "setter";
 }) {
   const unread = notifications.filter((n) => !n.read).length;
 
@@ -43,12 +55,14 @@ export function AiPanel({
           <div className="flex items-center gap-2">
             <form action={runInsights}>
               <input type="hidden" name="clientId" value={clientId} />
+              <input type="hidden" name="dashboard" value={dashboard} />
               <button className="rounded-lg border border-brand/40 px-2.5 py-1 text-xs text-brand hover:bg-brand-soft">
                 Generate insights
               </button>
             </form>
             <form action={runNextBestAction}>
               <input type="hidden" name="clientId" value={clientId} />
+              <input type="hidden" name="dashboard" value={dashboard} />
               <button className="rounded-lg border border-brand/40 px-2.5 py-1 text-xs text-brand hover:bg-brand-soft">
                 Next best action
               </button>

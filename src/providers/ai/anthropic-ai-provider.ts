@@ -43,6 +43,12 @@ export class AnthropicAiProvider implements AiProvider {
       .filter(Boolean)
       .join("\n");
 
+    // The persona only adjusts tone/emphasis — it's appended after the
+    // non-negotiable rules and can never override them.
+    const system = ctx.persona
+      ? `${SYSTEM}\n\nCoaching tone for this client (advisory style only, does not change the rules above): ${ctx.persona}`
+      : SYSTEM;
+
     const resp = await this.client.messages.create({
       model: this.model,
       max_tokens: 700,
@@ -51,7 +57,7 @@ export class AnthropicAiProvider implements AiProvider {
       system: [
         {
           type: "text",
-          text: SYSTEM,
+          text: system,
           cache_control: { type: "ephemeral" },
         } as unknown as Anthropic.TextBlockParam,
       ],

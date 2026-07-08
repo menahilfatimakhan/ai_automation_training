@@ -79,6 +79,12 @@ export const suggestionStatus = pgEnum("suggestion_status", [
   "accepted",
   "dismissed",
 ]);
+export const dashboardKey = pgEnum("dashboard_key", [
+  "master",
+  "sales",
+  "ads",
+  "setter",
+]);
 
 const money = (name: string) => numeric(name, { precision: 14, scale: 2 });
 
@@ -473,6 +479,82 @@ export const notifications = pgTable("notifications", {
     .notNull()
     .defaultNow(),
 });
+
+// ─── Settings (admin-configurable, per client) ───────────────────────────────
+/** Slack/notification preferences and delivery schedule, one row per client. */
+export const clientSettings = pgTable("client_settings", {
+  clientId: uuid("client_id")
+    .primaryKey()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  slackChannelId: text("slack_channel_id"),
+  slackEnabled: boolean("slack_enabled").notNull().default(false),
+  notifyDailyTargets: boolean("notify_daily_targets").notNull().default(true),
+  notifyEodReport: boolean("notify_eod_report").notNull().default(true),
+  notifyWeeklyReport: boolean("notify_weekly_report").notNull().default(true),
+  notifyMonthlyReport: boolean("notify_monthly_report").notNull().default(true),
+  notifyLossDebrief: boolean("notify_loss_debrief").notNull().default(true),
+  notifyAnomalyAlerts: boolean("notify_anomaly_alerts").notNull().default(true),
+  notifyShameFame: boolean("notify_shame_fame").notNull().default(false),
+  notifyStreaks: boolean("notify_streaks").notNull().default(false),
+  notifyBigDeals: boolean("notify_big_deals").notNull().default(true),
+  /** IANA timezone; governs when daily-target DMs / EOD reports fire. */
+  timezone: text("timezone").notNull().default("UTC"),
+  /** Local hour (0-23) to send the daily target DM. */
+  dailyTargetHour: integer("daily_target_hour").notNull().default(8),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** The AI's coaching personality/system-prompt tone, customizable per dashboard. */
+export const aiPersonas = pgTable(
+  "ai_personas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    dashboard: dashboardKey("dashboard").notNull(),
+    persona: text("persona").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    uniqClientDashboard: unique("ai_personas_client_dashboard_uniq").on(
+      t.clientId,
+      t.dashboard,
+    ),
+  }),
+);
+
+/** Admin-set warning thresholds for a KPI (e.g. "warn when close rate < 30%"). */
+export const alertThresholds = pgTable(
+  "alert_thresholds",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    metricKey: text("metric_key").notNull(),
+    /** Fires a warning notification when the metric drops below this value. */
+    warnBelow: numeric("warn_below", { precision: 18, scale: 4 }),
+    /** Fires a critical notification when the metric drops below this value. */
+    criticalBelow: numeric("critical_below", { precision: 18, scale: 4 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    uniqClientMetric: unique("alert_thresholds_client_metric_uniq").on(
+      t.clientId,
+      t.metricKey,
+    ),
+  }),
+);
 
 // ─── FX ──────────────────────────────────────────────────────────────────────
 export const fxRates = pgTable(

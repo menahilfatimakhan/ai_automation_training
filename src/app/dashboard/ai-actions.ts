@@ -19,11 +19,18 @@ async function loadClientInfo(clientId: string) {
   return { id: data.id, name: data.name, currency: data.reporting_currency };
 }
 
+type DashboardKey = "master" | "sales" | "ads" | "setter";
+
+function dashboardFrom(formData: FormData): DashboardKey {
+  const d = String(formData.get("dashboard") || "master");
+  return d === "sales" || d === "ads" || d === "setter" ? d : "master";
+}
+
 export async function runInsights(formData: FormData) {
   const ctx = await getSessionContext();
   if (!ctx) throw new Error("Not authenticated");
   const client = await loadClientInfo(String(formData.get("clientId")));
-  await generateDashboardInsights(client);
+  await generateDashboardInsights(client, "dashboard_insights", dashboardFrom(formData));
   revalidatePath("/dashboard/master");
 }
 
@@ -31,7 +38,7 @@ export async function runNextBestAction(formData: FormData) {
   const ctx = await getSessionContext();
   if (!ctx) throw new Error("Not authenticated");
   const client = await loadClientInfo(String(formData.get("clientId")));
-  await generateNextBestAction(client);
+  await generateNextBestAction(client, dashboardFrom(formData));
   revalidatePath("/dashboard/master");
 }
 

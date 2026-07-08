@@ -197,6 +197,10 @@ export interface CampaignRow {
   name: string;
   status: string;
   category: string | null;
+  /** Client-set: "typeform" (Typeform-focused) or "normal". */
+  adFocus: string | null;
+  /** Set when an admin flags this ad for review; null = not flagged. */
+  flaggedReason: string | null;
   currency: string;
 }
 
@@ -204,7 +208,7 @@ export async function loadCampaigns(clientId: string): Promise<CampaignRow[]> {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("ad_campaigns")
-    .select("campaign_id, name, status, category, currency")
+    .select("campaign_id, name, status, category, ad_focus, flagged_reason, currency")
     .eq("client_id", clientId)
     .order("name");
   return (data ?? []).map((r) => ({
@@ -212,6 +216,8 @@ export async function loadCampaigns(clientId: string): Promise<CampaignRow[]> {
     name: r.name,
     status: r.status,
     category: r.category,
+    adFocus: r.ad_focus,
+    flaggedReason: r.flagged_reason,
     currency: r.currency,
   }));
 }

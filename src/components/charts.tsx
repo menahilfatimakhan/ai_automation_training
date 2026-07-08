@@ -126,6 +126,35 @@ export function OutcomePie({ data }: { data: { name: string; value: number }[] }
   );
 }
 
+/** 30-day activity heatmap (e.g. Setter dashboard) — one cell per day, darker = busier. */
+export function Heatmap({ data }: { data: { date: string; value: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  return (
+    <div className="flex flex-wrap gap-1">
+      {data.map((d) => {
+        const intensity = d.value / max;
+        const bg =
+          d.value === 0
+            ? "bg-surface-sunken"
+            : intensity > 0.75
+              ? "bg-brand"
+              : intensity > 0.5
+                ? "bg-brand/70"
+                : intensity > 0.25
+                  ? "bg-brand/40"
+                  : "bg-brand/20";
+        return (
+          <div
+            key={d.date}
+            title={`${d.date}: ${d.value}`}
+            className={`h-4 w-4 rounded-sm ${bg}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 /** Tiny inline trend line for KPI cards — no axes, grid, or tooltip. */
 export function Sparkline({ data, color = "#3B82F6" }: { data: number[]; color?: string }) {
   if (!data || data.length < 2) return <div className="h-11" />;
