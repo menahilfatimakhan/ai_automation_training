@@ -17,6 +17,7 @@ type IconKey =
   | "ads"
   | "callLogs"
   | "leads"
+  | "reports"
   | "admin";
 
 function Icon({ name }: { name: IconKey }) {
@@ -76,6 +77,14 @@ function Icon({ name }: { name: IconKey }) {
           <circle cx="9" cy="7" r="3" />
           <path d="M22 19v-1a4 4 0 0 0-3-3.9" />
           <path d="M16 4.1a4 4 0 0 1 0 7.8" />
+        </svg>
+      );
+    case "reports":
+      return (
+        <svg {...common}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+          <path d="M9 13h6M9 17h6" />
         </svg>
       );
     case "admin":

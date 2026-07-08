@@ -1,6 +1,6 @@
 import { getProviders } from "@/providers/registry";
 import { bucketOf } from "@/domain/metrics";
-import { loadAdMetrics, loadCalls, toCallRecords } from "@/lib/data/dashboards";
+import { loadAdMetricsService, loadCallsService } from "@/lib/data/service-loaders";
 import { daysAgoIso, todayIso } from "@/lib/format";
 import { checkSeries, type AnomalyResult } from "@/lib/ai/anomaly-core";
 
@@ -33,11 +33,10 @@ async function dailyMetricSeries(client: ClientInfo) {
   const today = todayIso();
   const fx = getProviders().fx;
 
-  const [callRows, adRows] = await Promise.all([
-    loadCalls(client.id, from, today),
-    loadAdMetrics(client.id, from, today),
+  const [callRecords, adRows] = await Promise.all([
+    loadCallsService(client.id, from, today),
+    loadAdMetricsService(client.id, from, today),
   ]);
-  const callRecords = toCallRecords(callRows);
 
   const revByDate = new Map<string, number>();
   const closedByDate = new Map<string, number>();

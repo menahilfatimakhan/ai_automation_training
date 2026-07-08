@@ -22,6 +22,7 @@ export default async function DashboardLayout({
     { href: "/dashboard/ads", label: "Ads", icon: "ads", show: nav.ads },
     { href: "/dashboard/call-logs", label: "Call Logs", icon: "callLogs", show: nav.callLogs },
     { href: "/dashboard/leads", label: "Leads", icon: "leads", show: nav.leads },
+    { href: "/dashboard/reports", label: "Reports", icon: "reports", show: nav.reports },
     { href: "/dashboard/admin", label: "Admin", icon: "admin", show: nav.admin },
   ];
   const links: NavLink[] = all

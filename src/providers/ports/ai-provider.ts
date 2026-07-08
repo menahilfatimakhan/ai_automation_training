@@ -10,7 +10,7 @@
 
 export interface AiContext {
   /** What the model is being asked to do. */
-  task: "dashboard_insights" | "next_best_action" | "loss_debrief";
+  task: "dashboard_insights" | "next_best_action" | "loss_debrief" | "report_narrative";
   clientName: string;
   currency: string;
   /** Pre-computed, authoritative metrics. The model must not recompute these. */

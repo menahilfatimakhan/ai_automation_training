@@ -39,6 +39,12 @@ export class MockAiProvider implements AiProvider {
           details: `Lost call noted${ctx.notes ? ` (${ctx.notes})` : ""}. Common objection patterns suggest reinforcing value framing earlier and confirming budget authority before the close.`,
           suggestions: [],
         };
+      case "report_narrative":
+        return {
+          headline: `${ctx.clientName} performance summary`,
+          details: `Revenue ${m["revenue"] ?? "—"} ${ctx.currency}, close rate ${m["close_rate"] ?? "—"}, ROAS ${m["roas_rev"] ?? "—"}. ${ctx.notes ?? ""}`.trim(),
+          suggestions: [],
+        };
     }
   }
 

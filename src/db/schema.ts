@@ -85,6 +85,7 @@ export const dashboardKey = pgEnum("dashboard_key", [
   "ads",
   "setter",
 ]);
+export const reportType = pgEnum("report_type", ["daily", "weekly", "monthly"]);
 
 const money = (name: string) => numeric(name, { precision: 14, scale: 2 });
 
@@ -555,6 +556,29 @@ export const alertThresholds = pgTable(
     ),
   }),
 );
+
+// ─── AI Reports (scheduled + on-demand PDF summaries) ────────────────────────
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientId: uuid("client_id")
+    .notNull()
+    .references(() => clients.id, { onDelete: "cascade" }),
+  type: reportType("type").notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  /** The AI-written narrative included in the PDF (advisory only — metrics below are authoritative). */
+  narrative: text("narrative").notNull(),
+  /** The pre-computed metrics passed into the prompt (provenance/audit, same pattern as ai_suggestions). */
+  metricsSnapshot: jsonb("metrics_snapshot").notNull().default({}),
+  /** Base64-encoded PDF bytes. */
+  pdfBase64: text("pdf_base64").notNull(),
+  generatedBy: uuid("generated_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // ─── FX ──────────────────────────────────────────────────────────────────────
 export const fxRates = pgTable(

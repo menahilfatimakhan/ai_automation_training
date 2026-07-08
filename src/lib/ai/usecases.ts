@@ -1,6 +1,7 @@
 import { getProviders } from "@/providers/registry";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { computeMasterView } from "@/lib/data/master";
+import { reportMetricsForClient } from "@/lib/ai/report-metrics";
 import type { AiAdvice, AiContext } from "@/providers/ports/ai-provider";
 
 /**
@@ -184,4 +185,32 @@ export async function generateCampaignNarrative(
     body: advice.details,
     meta: { sync },
   });
+}
+
+/**
+ * AI narrative for a scheduled/on-demand report (Step 8). Returns the advice
+ * alongside the exact metrics snapshot used, so the caller can persist both
+ * for the report's provenance (same pattern as ai_suggestions.prompt_context).
+ */
+export async function generateReportNarrative(
+  client: ClientInfo,
+  period: { label: string; periodStart: string; periodEnd: string },
+): Promise<{ advice: AiAdvice; metrics: Record<string, number | string> }> {
+  const { ai } = getProviders();
+  // Service-level metrics (not the cookie-based metricsForClient) — reports
+  // must generate identically whether triggered by an admin click (has a
+  // session) or the scheduler (no session at all).
+  const metrics = await reportMetricsForClient(client, period.periodStart, period.periodEnd);
+  const persona = await personaFor(client.id, "master");
+
+  const advice = await ai.advise({
+    task: "report_narrative",
+    clientName: client.name,
+    currency: client.currency,
+    metrics,
+    persona,
+    notes: `Write a ${period.label} performance report narrative (3-5 sentences) for the period ${period.periodStart} to ${period.periodEnd}. Cover revenue/cash progress, close rate, and ad performance; call out anything that needs attention.`,
+  });
+
+  return { advice, metrics };
 }
