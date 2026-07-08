@@ -14,6 +14,7 @@ import {
   updateAiPersona,
   updateClientSettings,
 } from "@/app/dashboard/admin/actions";
+import { runAnomalyCheck } from "@/app/dashboard/ai-actions";
 import { ActionForm } from "@/components/ActionForm";
 
 const DASHBOARDS = ["master", "sales", "ads", "setter"] as const;
@@ -457,6 +458,29 @@ export default async function AdminPage() {
           </label>
           <button className={btnCls}>Save</button>
         </form>
+      </section>
+
+      {/* ── Anomaly detection dry-run ────────────────────────────────── */}
+      <section className="card p-4">
+        <h2 className="mb-1 text-sm font-medium text-ink-soft">
+          Anomaly detection — manual check
+        </h2>
+        <p className="mb-3 text-xs text-ink-faint">
+          Compares today's revenue/ad spend/close rate/show-up rate against
+          each client's 28-day average (warn at -20%, critical at -35%).
+          Runs automatically every 4 hours once the scheduler (Step 8) is
+          enabled — trigger a dry run here to verify without waiting.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {clients.map((c) => (
+            <ActionForm key={c.id} action={runAnomalyCheck} success={`Anomaly scan run for ${c.name}`}>
+              <input type="hidden" name="clientId" value={c.id} />
+              <button className="rounded border border-line px-3 py-1.5 text-xs text-ink-soft hover:border-brand/50 hover:text-ink">
+                Check {c.name}
+              </button>
+            </ActionForm>
+          ))}
+        </div>
       </section>
     </div>
   );

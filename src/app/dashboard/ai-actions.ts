@@ -7,6 +7,7 @@ import {
   generateDashboardInsights,
   generateNextBestAction,
 } from "@/lib/ai/usecases";
+import { runAnomalyScan } from "@/lib/ai/anomaly";
 
 async function loadClientInfo(clientId: string) {
   const supabase = await createSupabaseServerClient();
@@ -39,6 +40,19 @@ export async function runNextBestAction(formData: FormData) {
   if (!ctx) throw new Error("Not authenticated");
   const client = await loadClientInfo(String(formData.get("clientId")));
   await generateNextBestAction(client, dashboardFrom(formData));
+  revalidatePath("/dashboard/master");
+}
+
+/**
+ * Manual trigger for the anomaly scan (dry-run verification without waiting
+ * on the Step 8 scheduler's 4-hour cadence). Admin only.
+ */
+export async function runAnomalyCheck(formData: FormData): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) throw new Error("Not authenticated");
+  if (!ctx.isAdmin) throw new Error("Admin only");
+  const client = await loadClientInfo(String(formData.get("clientId")));
+  await runAnomalyScan(client);
   revalidatePath("/dashboard/master");
 }
 
