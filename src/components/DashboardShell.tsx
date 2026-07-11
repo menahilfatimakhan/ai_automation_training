@@ -102,12 +102,15 @@ export function DashboardShell({
   userLabel,
   children,
   slackConnected,
+  slackWorkspaceUrl,
 }: {
   links: NavLink[];
   userLabel: string;
   children: React.ReactNode;
   /** Admin only — omit (undefined) to hide the badge entirely for non-admins. */
   slackConnected?: boolean;
+  /** The real workspace URL (resolved from the bot token) — lets the badge open Slack itself. */
+  slackWorkspaceUrl?: string | null;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
@@ -146,29 +149,70 @@ export function DashboardShell({
     </>
   );
 
+  const SlackIcon = (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
+      <path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v4A2.5 2.5 0 0 0 9.5 11h1V4.5A2.5 2.5 0 0 0 9.5 2Z" opacity=".55" />
+      <path d="M4.5 7A2.5 2.5 0 0 0 2 9.5 2.5 2.5 0 0 0 4.5 12h4A2.5 2.5 0 0 0 11 9.5v-1H4.5Z" opacity=".85" />
+      <path d="M14.5 22a2.5 2.5 0 0 0 2.5-2.5v-4A2.5 2.5 0 0 0 14.5 13h-1v6.5a2.5 2.5 0 0 0 2.5 2.5Z" opacity=".55" />
+      <path d="M19.5 17A2.5 2.5 0 0 0 22 14.5 2.5 2.5 0 0 0 19.5 12h-4a2.5 2.5 0 0 0-2.5 2.5v1h6.5Z" opacity=".85" />
+      <path d="M22 9.5A2.5 2.5 0 0 0 19.5 7h-4v4h4A2.5 2.5 0 0 0 22 9.5Z" opacity=".7" />
+      <path d="M17 4.5A2.5 2.5 0 0 0 14.5 2 2.5 2.5 0 0 0 12 4.5v4h2.5A2.5 2.5 0 0 0 17 8V4.5Z" opacity=".4" />
+      <path d="M2 14.5A2.5 2.5 0 0 0 4.5 17h4v-4h-4A2.5 2.5 0 0 0 2 14.5Z" opacity=".4" />
+      <path d="M7 19.5A2.5 2.5 0 0 0 9.5 22 2.5 2.5 0 0 0 12 19.5v-4H9.5A2.5 2.5 0 0 0 7 18v1.5Z" opacity=".7" />
+    </svg>
+  );
+
+  // Connected + we resolved a real workspace URL → clicking opens Slack
+  // itself in a new tab. Otherwise it falls back to our own Slack settings
+  // page (either to see why it's not connecting, or to set it up).
+  const slackHref = slackConnected && slackWorkspaceUrl ? slackWorkspaceUrl : "/dashboard/admin";
+  const opensExternally = slackConnected && !!slackWorkspaceUrl;
+
   const slackBadge = slackConnected !== undefined && (
-    <Link
-      href="/dashboard/admin"
+    <div
       className={`mb-3 flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-colors ${
         slackConnected
-          ? "border-accent-green/25 bg-accent-green/10 text-accent-green hover:bg-accent-green/15"
-          : "border-line text-ink-faint hover:border-line-strong hover:text-ink-soft"
+          ? "border-accent-green/25 bg-accent-green/10 text-accent-green"
+          : "border-line text-ink-faint"
       }`}
-      title={slackConnected ? "Slack connected — click to manage" : "Slack not connected — click to set up"}
     >
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${slackConnected ? "bg-accent-green" : "bg-ink-faint"}`} />
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
-        <path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v4A2.5 2.5 0 0 0 9.5 11h1V4.5A2.5 2.5 0 0 0 9.5 2Z" opacity=".55" />
-        <path d="M4.5 7A2.5 2.5 0 0 0 2 9.5 2.5 2.5 0 0 0 4.5 12h4A2.5 2.5 0 0 0 11 9.5v-1H4.5Z" opacity=".85" />
-        <path d="M14.5 22a2.5 2.5 0 0 0 2.5-2.5v-4A2.5 2.5 0 0 0 14.5 13h-1v6.5a2.5 2.5 0 0 0 2.5 2.5Z" opacity=".55" />
-        <path d="M19.5 17A2.5 2.5 0 0 0 22 14.5 2.5 2.5 0 0 0 19.5 12h-4a2.5 2.5 0 0 0-2.5 2.5v1h6.5Z" opacity=".85" />
-        <path d="M22 9.5A2.5 2.5 0 0 0 19.5 7h-4v4h4A2.5 2.5 0 0 0 22 9.5Z" opacity=".7" />
-        <path d="M17 4.5A2.5 2.5 0 0 0 14.5 2 2.5 2.5 0 0 0 12 4.5v4h2.5A2.5 2.5 0 0 0 17 8V4.5Z" opacity=".4" />
-        <path d="M2 14.5A2.5 2.5 0 0 0 4.5 17h4v-4h-4A2.5 2.5 0 0 0 2 14.5Z" opacity=".4" />
-        <path d="M7 19.5A2.5 2.5 0 0 0 9.5 22 2.5 2.5 0 0 0 12 19.5v-4H9.5A2.5 2.5 0 0 0 7 18v1.5Z" opacity=".7" />
-      </svg>
-      {slackConnected ? "Slack connected" : "Slack not connected"}
-    </Link>
+      <Link
+        href={slackHref}
+        target={opensExternally ? "_blank" : undefined}
+        rel={opensExternally ? "noopener noreferrer" : undefined}
+        className={`flex flex-1 items-center gap-2 truncate ${
+          slackConnected ? "hover:text-accent-green/80" : "hover:text-ink-soft"
+        }`}
+        title={
+          opensExternally
+            ? "Open your Slack workspace ↗"
+            : slackConnected
+              ? "Slack connected — click to manage"
+              : "Slack not connected — click to set up"
+        }
+      >
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${slackConnected ? "bg-accent-green" : "bg-ink-faint"}`} />
+        {SlackIcon}
+        <span className="truncate">{slackConnected ? "Open Slack" : "Slack not connected"}</span>
+        {opensExternally && (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="ml-auto shrink-0 opacity-70">
+            <path d="M7 17 17 7M9 7h8v8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </Link>
+      {opensExternally && (
+        <Link
+          href="/dashboard/admin"
+          className="shrink-0 text-ink-faint transition-colors hover:text-ink-soft"
+          title="Slack settings"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 6 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 9H4.5a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 6 4.6L5.9 4.5A2 2 0 1 1 8.7 1.7l.1.1A1.7 1.7 0 0 0 11 3h.1A1.7 1.7 0 0 0 12 1.5" />
+          </svg>
+        </Link>
+      )}
+    </div>
   );
 
   return (

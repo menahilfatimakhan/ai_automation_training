@@ -3,6 +3,8 @@ import { getSessionContext } from "@/lib/auth";
 import { navFor } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
 import { getProviders } from "@/providers/registry";
+import { serverEnv } from "@/lib/env";
+import { getSlackWorkspaceUrl } from "@/lib/slack";
 import { DashboardShell, type NavLink } from "@/components/DashboardShell";
 import { CoachWidget } from "@/components/CoachWidget";
 import { Toaster } from "@/components/Toast";
@@ -35,11 +37,21 @@ export default async function DashboardLayout({
   // Default client for the floating Coach (first the viewer can see).
   const { active } = await resolveClientScope(ctx);
 
-  // Slack status badge (admin only — it links to Admin → Slack settings).
-  const slackConnected = ctx.isAdmin ? getProviders().notifier.name === "slack" : undefined;
+  // Slack status badge (admin only) — resolves the real workspace URL from
+  // the bot token itself (auth.test), so the badge can open Slack directly.
+  const isSlackNotifier = ctx.isAdmin && getProviders().notifier.name === "slack";
+  const slackConnected = ctx.isAdmin ? isSlackNotifier : undefined;
+  const slackWorkspaceUrl = isSlackNotifier
+    ? await getSlackWorkspaceUrl(serverEnv().SLACK_BOT_TOKEN)
+    : null;
 
   return (
-    <DashboardShell links={links} userLabel={`Signed in · ${role}`} slackConnected={slackConnected}>
+    <DashboardShell
+      links={links}
+      userLabel={`Signed in · ${role}`}
+      slackConnected={slackConnected}
+      slackWorkspaceUrl={slackWorkspaceUrl}
+    >
       {children}
       {active && <CoachWidget clientId={active.id} clientName={active.name} />}
       <Toaster />

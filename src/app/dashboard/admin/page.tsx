@@ -16,6 +16,9 @@ import {
 } from "@/app/dashboard/admin/actions";
 import { runAnomalyCheck } from "@/app/dashboard/ai-actions";
 import { loadAuditLogAll } from "@/lib/data/audit";
+import { getProviders } from "@/providers/registry";
+import { serverEnv } from "@/lib/env";
+import { getSlackWorkspaceUrl, slackChannelUrl } from "@/lib/slack";
 import { ActionForm } from "@/components/ActionForm";
 
 const DASHBOARDS = ["master", "sales", "ads", "setter"] as const;
@@ -42,6 +45,10 @@ export default async function AdminPage() {
     await loadAdminData();
   const auditLog = await loadAuditLogAll(50);
   const month = monthStartIso();
+  const isSlackNotifier = getProviders().notifier.name === "slack";
+  const slackWorkspaceUrl = isSlackNotifier
+    ? await getSlackWorkspaceUrl(serverEnv().SLACK_BOT_TOKEN)
+    : null;
   const goalFor = (clientId: string) =>
     goals.find((g) => g.client_id === clientId && g.month === month);
   const clientName = (id: string) => clients.find((c) => c.id === id)?.name ?? id;
@@ -281,6 +288,16 @@ export default async function AdminPage() {
                       className={`mt-1 block w-40 ${inputCls}`}
                     />
                   </label>
+                  {slackWorkspaceUrl && s?.slackChannelId && (
+                    <a
+                      href={slackChannelUrl(slackWorkspaceUrl, s.slackChannelId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mb-[3px] text-xs font-medium text-accent-green hover:underline"
+                    >
+                      Open channel ↗
+                    </a>
+                  )}
                   <label className="text-xs text-ink-soft">
                     Timezone
                     <input
