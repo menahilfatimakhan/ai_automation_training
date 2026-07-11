@@ -10,6 +10,9 @@ git pull origin master
 echo "→ Installing dependencies (clean)…"
 npm ci
 
+echo "→ Running DB migrations…"
+npm run db:migrate
+
 echo "→ Building…"
 npm run build
 
