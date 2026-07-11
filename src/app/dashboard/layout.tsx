@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionContext } from "@/lib/auth";
 import { navFor } from "@/lib/access";
 import { resolveClientScope } from "@/lib/data/client-scope";
+import { getProviders } from "@/providers/registry";
 import { DashboardShell, type NavLink } from "@/components/DashboardShell";
 import { CoachWidget } from "@/components/CoachWidget";
 import { Toaster } from "@/components/Toast";
@@ -34,8 +35,11 @@ export default async function DashboardLayout({
   // Default client for the floating Coach (first the viewer can see).
   const { active } = await resolveClientScope(ctx);
 
+  // Slack status badge (admin only — it links to Admin → Slack settings).
+  const slackConnected = ctx.isAdmin ? getProviders().notifier.name === "slack" : undefined;
+
   return (
-    <DashboardShell links={links} userLabel={`Signed in · ${role}`}>
+    <DashboardShell links={links} userLabel={`Signed in · ${role}`} slackConnected={slackConnected}>
       {children}
       {active && <CoachWidget clientId={active.id} clientName={active.name} />}
       <Toaster />

@@ -162,8 +162,12 @@ export default async function AdsDashboardPage({
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-        {headlineCards.map((c) => (
-          <div key={c.label} className="card p-3">
+        {headlineCards.map((c, i) => (
+          <div
+            key={c.label}
+            className="card enter p-3 transition-transform hover:-translate-y-0.5 hover:border-line-strong"
+            style={{ "--stagger": i } as React.CSSProperties}
+          >
             <div className="text-xs text-ink-soft">{c.label}</div>
             <div className="mt-1 text-lg font-semibold">{c.value}</div>
           </div>

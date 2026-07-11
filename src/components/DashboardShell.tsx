@@ -101,10 +101,13 @@ export function DashboardShell({
   links,
   userLabel,
   children,
+  slackConnected,
 }: {
   links: NavLink[];
   userLabel: string;
   children: React.ReactNode;
+  /** Admin only — omit (undefined) to hide the badge entirely for non-admins. */
+  slackConnected?: boolean;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
@@ -118,13 +121,22 @@ export function DashboardShell({
           <Link
             key={l.href}
             href={l.href}
-            className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+            className={`group relative flex items-center gap-3 overflow-hidden rounded-lg px-3 py-2 text-sm transition-colors duration-200 ${
               active
                 ? "bg-brand-soft text-ink"
                 : "text-ink-soft hover:bg-surface-raised hover:text-ink"
             }`}
           >
-            <span className={active ? "text-brand" : "text-ink-faint group-hover:text-ink-soft"}>
+            <span
+              className={`absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-brand transition-all duration-200 ${
+                active ? "opacity-100" : "opacity-0"
+              }`}
+            />
+            <span
+              className={`transition-transform duration-200 group-hover:scale-110 ${
+                active ? "text-brand" : "text-ink-faint group-hover:text-ink-soft"
+              }`}
+            >
               <Icon name={l.icon} />
             </span>
             {l.label}
@@ -134,12 +146,37 @@ export function DashboardShell({
     </>
   );
 
+  const slackBadge = slackConnected !== undefined && (
+    <Link
+      href="/dashboard/admin"
+      className={`mb-3 flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+        slackConnected
+          ? "border-accent-green/25 bg-accent-green/10 text-accent-green hover:bg-accent-green/15"
+          : "border-line text-ink-faint hover:border-line-strong hover:text-ink-soft"
+      }`}
+      title={slackConnected ? "Slack connected — click to manage" : "Slack not connected — click to set up"}
+    >
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${slackConnected ? "bg-accent-green" : "bg-ink-faint"}`} />
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0">
+        <path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v4A2.5 2.5 0 0 0 9.5 11h1V4.5A2.5 2.5 0 0 0 9.5 2Z" opacity=".55" />
+        <path d="M4.5 7A2.5 2.5 0 0 0 2 9.5 2.5 2.5 0 0 0 4.5 12h4A2.5 2.5 0 0 0 11 9.5v-1H4.5Z" opacity=".85" />
+        <path d="M14.5 22a2.5 2.5 0 0 0 2.5-2.5v-4A2.5 2.5 0 0 0 14.5 13h-1v6.5a2.5 2.5 0 0 0 2.5 2.5Z" opacity=".55" />
+        <path d="M19.5 17A2.5 2.5 0 0 0 22 14.5 2.5 2.5 0 0 0 19.5 12h-4a2.5 2.5 0 0 0-2.5 2.5v1h6.5Z" opacity=".85" />
+        <path d="M22 9.5A2.5 2.5 0 0 0 19.5 7h-4v4h4A2.5 2.5 0 0 0 22 9.5Z" opacity=".7" />
+        <path d="M17 4.5A2.5 2.5 0 0 0 14.5 2 2.5 2.5 0 0 0 12 4.5v4h2.5A2.5 2.5 0 0 0 17 8V4.5Z" opacity=".4" />
+        <path d="M2 14.5A2.5 2.5 0 0 0 4.5 17h4v-4h-4A2.5 2.5 0 0 0 2 14.5Z" opacity=".4" />
+        <path d="M7 19.5A2.5 2.5 0 0 0 9.5 22 2.5 2.5 0 0 0 12 19.5v-4H9.5A2.5 2.5 0 0 0 7 18v1.5Z" opacity=".7" />
+      </svg>
+      {slackConnected ? "Slack connected" : "Slack not connected"}
+    </Link>
+  );
+
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface/60 px-3 py-5 md:flex">
-        <div className="flex items-center gap-2 px-2 pb-6">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand text-sm font-bold text-white">
+        <div className="group flex items-center gap-2 px-2 pb-6">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand text-sm font-bold text-white transition-transform duration-300 group-hover:rotate-[8deg] group-hover:scale-105">
             N
           </span>
           <span className="text-[15px] font-semibold tracking-tight">NEW SZN</span>
@@ -147,17 +184,19 @@ export function DashboardShell({
 
         <nav className="flex flex-1 flex-col gap-1">{navItems}</nav>
 
-        <div className="mb-4 rounded-xl border border-brand/20 bg-gradient-to-b from-brand-soft to-transparent p-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-brand">
+        <div className="group relative mb-4 overflow-hidden rounded-xl border border-brand/20 bg-gradient-to-b from-brand-soft to-transparent p-3 transition-colors hover:border-brand/35">
+          <div className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-brand/20 blur-2xl [animation:soft-pulse_3s_ease-in-out_infinite]" />
+          <div className="relative flex items-center gap-1.5 text-xs font-semibold">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-brand transition-transform duration-300 group-hover:scale-110">
               <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
             </svg>
             New season energy
           </div>
-          <p className="mt-1 text-[11px] text-ink-soft">Keep the numbers moving.</p>
+          <p className="relative mt-1 text-[11px] text-ink-soft">Keep the numbers moving.</p>
         </div>
 
         <div className="mt-1 border-t border-line pt-4">
+          {slackBadge}
           <div className="truncate px-3 pb-2 text-xs text-ink-faint">{userLabel}</div>
           <form action={signOut}>
             <button className="btn-ghost w-full justify-start">Sign out</button>

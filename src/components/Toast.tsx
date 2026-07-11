@@ -7,7 +7,10 @@ interface ToastItem {
   id: number;
   message: string;
   type: ToastType;
+  leaving?: boolean;
 }
+
+const EXIT_MS = 180;
 
 const EVENT = "app:toast";
 
@@ -27,7 +30,10 @@ export function Toaster() {
       const detail = (e as CustomEvent).detail as { message: string; type: ToastType };
       const id = ++counter;
       setItems((cur) => [...cur, { id, ...detail }]);
-      setTimeout(() => setItems((cur) => cur.filter((t) => t.id !== id)), 3500);
+      setTimeout(() => {
+        setItems((cur) => cur.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+        setTimeout(() => setItems((cur) => cur.filter((t) => t.id !== id)), EXIT_MS);
+      }, 3500);
     }
     window.addEventListener(EVENT, onToast);
     return () => window.removeEventListener(EVENT, onToast);
@@ -40,6 +46,8 @@ export function Toaster() {
           key={t.id}
           role="status"
           className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm shadow-pop ${
+            t.leaving ? "animate-toast-out" : "animate-toast-in"
+          } ${
             t.type === "error"
               ? "border-accent-rose/40 bg-surface text-accent-rose"
               : "border-brand/40 bg-surface text-ink"

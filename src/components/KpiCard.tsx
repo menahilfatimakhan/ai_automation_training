@@ -44,21 +44,27 @@ export function KpiCard({
   periodStart,
   periodEnd,
   readOnly,
+  index = 0,
 }: {
   card: KpiCardVM;
   clientId: string;
   periodStart: string;
   periodEnd: string;
   readOnly: boolean;
+  /** Position within its grid — drives the entrance stagger delay. */
+  index?: number;
 }) {
   const currency = card.currency ?? "USD";
   const progress = card.goal ? Math.min(100, Math.round(card.goal.progress * 100)) : 0;
 
   return (
-    <div className="card group p-5 transition-colors hover:border-line-strong">
+    <div
+      className="card enter group p-5 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-pop"
+      style={{ "--stagger": index } as React.CSSProperties}
+    >
       <div className="flex items-start justify-between">
         <span className="flex items-center gap-1.5 text-[13px] font-medium text-ink-soft">
-          <span className={`h-1.5 w-1.5 rounded-full ${TONE_DOT[card.tone]}`} />
+          <span className={`h-1.5 w-1.5 rounded-full ${TONE_DOT[card.tone]} transition-transform duration-200 group-hover:scale-125`} />
           {card.label}
         </span>
         {card.overridden && (

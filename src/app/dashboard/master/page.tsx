@@ -51,7 +51,7 @@ export default async function MasterDashboardPage({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {view.cards
           .filter((c) => c.spark)
-          .map((card) => (
+          .map((card, i) => (
             <KpiCard
               key={card.key}
               card={card}
@@ -59,6 +59,7 @@ export default async function MasterDashboardPage({
               periodStart={view.periodStart}
               periodEnd={view.periodEnd}
               readOnly={readOnly}
+              index={i}
             />
           ))}
       </div>
@@ -67,7 +68,7 @@ export default async function MasterDashboardPage({
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         {view.cards
           .filter((c) => !c.spark)
-          .map((card) => (
+          .map((card, i) => (
             <KpiCard
               key={card.key}
               card={card}
@@ -75,6 +76,7 @@ export default async function MasterDashboardPage({
               periodStart={view.periodStart}
               periodEnd={view.periodEnd}
               readOnly={readOnly}
+              index={i}
             />
           ))}
       </div>

@@ -22,9 +22,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-base font-bold text-white">
+      <div className="enter w-full max-w-sm">
+        <div className="group mb-8 flex items-center gap-2.5">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-base font-bold text-white transition-transform duration-300 group-hover:rotate-[8deg] group-hover:scale-105">
             N
           </span>
           <div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
           </form>
 
           {showReset && (
-            <form action={resetAction} className="mt-4 space-y-2 border-t border-line pt-4">
+            <form action={resetAction} className="enter mt-4 space-y-2 border-t border-line pt-4">
               <label htmlFor="reset-email" className="mb-1 block text-xs text-ink-soft">
                 Enter your email and we&apos;ll send a reset link
               </label>
@@ -117,7 +117,7 @@ export default function LoginPage() {
         </div>
 
         {/* Demo quick-login — click a role to fill the form */}
-        <div className="card mt-4 p-4">
+        <div className="card enter mt-4 p-4" style={{ "--stagger": 2 } as React.CSSProperties}>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium text-ink-soft">Demo accounts</span>
             <span className="chip">password: {DEMO_PASSWORD}</span>
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   setEmail(a.email);
                   setPassword(DEMO_PASSWORD);
                 }}
-                className="rounded-lg border border-line bg-surface-sunken px-3 py-2 text-left transition-colors hover:border-brand/50"
+                className="rounded-lg border border-line bg-surface-sunken px-3 py-2 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-pop active:translate-y-0 active:scale-[0.98]"
               >
                 <div className="text-sm font-medium">{a.role}</div>
                 <div className="text-[11px] text-ink-faint">{a.note}</div>
